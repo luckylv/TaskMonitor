@@ -5,62 +5,196 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace Wlzx.Utility
 {
     /// <summary>
-    /// 短信发送,采用乐云短信平台每天可以免费发送100条,同一接收人5分钟内只能发送两条
-    /// http://apistore.baidu.com/apiworks/servicedetail/774.html
+    /// 短信发送类
     /// </summary>
     public class SmsHelper
     {
-        /// <summary>
-        /// 发送接口地址
-        /// </summary>
-        private static readonly string SmsAPI = "http://apis.baidu.com/hunanlehuotechnologyco/sms/api";
 
-        /// <summary>
-        /// APIKEY
-        /// </summary>
-        private static readonly string Apikey = "63728eb0cc4807c8b4fc87084eab90e0";
+        private static string LTinsertSQL = @"INSERT INTO [ShortMsg_New].[dbo].[SendSms]
+                                                ([phoneNumber]
+                                                ,[smsContent]
+                                                ,[smsTime]
+                                                ,[smsUser]
+                                                ,[staTime]
+                                                ,[endTime]
+                                                ,[status]
+                                                ,[extno]
+                                                ,[resultCode]
+                                                ,[resultDesc]
+                                                ,[failList])
+                            VALUES(@phoneNumber,@smsContent,@smsTime,7,null,null,0,null,null,null,null)";
 
+        private static string LTqueryIdSQL = @"Select MAX(smsIndex) AS ID FROM [ShortMsg_New].[dbo].[SendSms]";
+
+        private static string LTqueryStatus = @"Select * FROM [ShortMsg_New].[dbo].[SendSms] where smsIndex=@smsId";
         /// <summary>
         /// 发送短信
         /// </summary>
-        /// <param name="receiver">短信接收人手机号码</param>
+        /// <param name="receiver">短信接收人手机号码（多号码用,分隔）</param>
         /// <param name="content">短信内容</param>
         /// <returns>发送状态</returns>
         public static SMSCode SendMessage(string receiver, string content)
         {
             try
             {
-                //创建Httphelper对象
-                HttpHelper http = new HttpHelper();
-                //创建Httphelper参数对象
-                HttpItem item = new HttpItem()
+                //添加邮件接收人地址
+                string[] receivers = receiver.Split(new char[] { ',' });
+                foreach (string phone in receivers)
                 {
-                    URL = string.Format("{0}?phone={1}&content=验证码:{2}", SmsAPI, receiver, content),//URL     必需项    
-                    Method = "get",//可选项 默认为Get   
-                    ContentType = "text/plain"//返回类型    可选项有默认值 ,
-                };
-                item.Header.Add("apikey", Apikey);
-                //请求的返回值对象
-                HttpResult result = http.GetHtml(item);
-                JObject jo = JObject.Parse(result.Html);
-                JToken value = null;
-                if (jo.TryGetValue("result", out value))
-                {
-                    return EnumHelper.IntToEnum<SMSCode>(Convert.ToInt32(value.ToString()));
+                    //若发送失败，则重发此条短信一次
+                    if (SendOneMessage(phone, content)!=SMSCode.Success)
+                    {
+                        SendOneMessage(phone, content);
+                    }
                 }
-                return SMSCode.SystemBusy;
+                return SMSCode.Success;
+
+                #region "老代码"
+                ////创建Httphelper对象
+                //HttpHelper http = new HttpHelper();
+                ////创建Httphelper参数对象
+                //HttpItem item = new HttpItem()
+                //{
+                //    URL = string.Format("{0}?phone={1}&content=验证码:{2}", SmsAPI, receiver, content),//URL     必需项    
+                //    Method = "get",//可选项 默认为Get   
+                //    ContentType = "text/plain"//返回类型    可选项有默认值 ,
+                //};
+                //item.Header.Add("apikey", Apikey);
+                ////请求的返回值对象
+                //HttpResult result = http.GetHtml(item);
+                //JObject jo = JObject.Parse(result.Html);
+                //JToken value = null;
+                //if (jo.TryGetValue("result", out value))
+                //{
+                //    return EnumHelper.IntToEnum<SMSCode>(Convert.ToInt32(value.ToString()));
+                //}
+                //return SMSCode.SystemBusy;
+
+
+                #endregion
             }
             catch (Exception ex)
             {
-                LogHelper.WriteLog("短信发送失败", ex);
+                LogHelper.WriteError("短信发送出错", ex);
+                LogHelper.WriteLogC("短信发送出错"+ex.Message);
                 return SMSCode.Exception;
             }
         }
+
+        public static SMSCode SendOneMessage(string oneReceiver, string content)
+        {
+            try
+            {
+                //插入一条发送记录
+                DbHelper.ExecuteNonQuery(SysConfig.LTsmsConnect, LTinsertSQL, new { phoneNumber = oneReceiver, smsContent = content, smsTime = DateTime.Now.ToString() });
+                //取出该条记录ID号
+                string smsId = DbHelper.ExecuteScalar<string>(SysConfig.LTsmsConnect, LTqueryIdSQL, null);
+
+                //等待2秒首次查询发送状态
+                Thread.Sleep(2000);
+                LTsmsUtil current = DbHelper.Single<LTsmsUtil>(SysConfig.LTsmsConnect, LTqueryStatus, new { smsId = smsId });
+                if (current == null)
+                {
+                    string logstr = "发送短信错误，错误原因：第1次无法检索短信发送状态，请检查数据库连接";
+                    LogHelper.WriteLogC(logstr);
+                    LogHelper.WriteError(logstr);
+                    return SMSCode.Exception;
+                }
+
+                //若无状态则每隔1秒查一次状态，共5次
+                int checkTime = 0;
+                while (checkTime < 5 && string.IsNullOrEmpty(current.resultCode))
+                {
+                    Thread.Sleep(1000);
+                    current = DbHelper.Single<LTsmsUtil>(SysConfig.LTsmsConnect, LTqueryStatus, new { smsId = smsId });
+                    if (current == null)
+                    {
+                        string logstr = "发送短信错误，错误原因：第" + checkTime.ToString() + "次无法检索到短信发送状态，请检查数据库连接";
+                        LogHelper.WriteLogC(logstr);
+                        LogHelper.WriteError(logstr);
+                        return SMSCode.Exception;
+                    }
+                }
+                //5次内检索到状态
+                if (checkTime < 5)
+                {   //状态为0则发送成功
+                    if (Convert.ToInt32(current.resultCode) == 0)
+                    {
+                        string logstr = "成功发送短信至" + current.phoneNumber + "，内容:" + current.smsContent;
+                        LogHelper.WriteLogC(logstr);
+                        LogHelper.WriteLog(logstr);
+                        return SMSCode.Success;
+                    }
+                    else//状态为非0则发送失败
+                    {
+                        string logstr = "发送短信失败，未到达" + current.phoneNumber + "，内容:" + current.smsContent + "，失败原因：" + current.resultDesc;
+                        LogHelper.WriteLogC(logstr);
+                        LogHelper.WriteError(logstr);
+                        return SMSCode.Fail;
+                    }
+                }
+                else//5次内还未检索到状态
+                {
+                    string logstr = "发送短信失败，未到达" + current.phoneNumber + "，内容:" + current.smsContent + "，失败原因：5次检索未取得短信发送状态";
+                    LogHelper.WriteLogC(logstr);
+                    LogHelper.WriteError(logstr);
+                    return SMSCode.Fail;
+                }
+       
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteError("短信发送出错", ex);
+                LogHelper.WriteLogC("短信发送出错" + ex.Message);
+                return SMSCode.Exception;
+            }
+        }
+
     }
+
+
+
+    /// <summary>
+    /// 联通短信记录实体
+    /// </summary>
+    public class LTsmsUtil
+    {
+        /// <summary>
+        /// 短信发送ID
+        /// </summary>
+        public decimal smsIndex { get; set; }
+
+        /// <summary>
+        /// 发送手机号
+        /// </summary>
+        public string phoneNumber { get; set; }
+
+        /// <summary>
+        /// 发送内容
+        /// </summary>
+        public string smsContent { get; set; }
+
+        /// <summary>
+        /// 短信发送时间
+        /// </summary>
+        public DateTime smsTime { get; set; }
+
+        /// <summary>
+        /// 短信发送状态
+        /// </summary>
+        public string resultCode { get; set; }
+
+        /// <summary>
+        /// 短信发送状态描述
+        /// </summary>
+        public string resultDesc { get; set; }
+    }
+
 
     /// <summary>
     /// 请求结果Code枚举
@@ -68,111 +202,24 @@ namespace Wlzx.Utility
     public enum SMSCode
     {
         #region "验证码短信接口调用方错误码"
-        /// <summary>
-        /// 参数不正确，需要重新核定参数
-        /// </summary>
-        [Description("参数不正确，需要重新核定参数")]
-        ParameterError = -8,
 
         /// <summary>
-        /// 内容中含有敏感词，需去掉敏感词
+        /// 短信发送失败
         /// </summary>
-        [Description("内容中含有敏感词，需去掉敏感词")]
-        ContentSensitive = -9,
+        [Description("短信发送失败")]
+        Fail = -1,
 
         /// <summary>
-        /// 接口调用成功，短信已经提交到运营商
+        /// 短信发送成功
         /// </summary>
-        [Description("接口调用成功，短信已经提交到运营商")]
+        [Description("短信发送成功")]
         Success = 0,
 
         /// <summary>
-        /// 调用发送异常，可能是参数问题
+        /// 发送状态记录采集失败，结果为空
         /// </summary>
-        [Description("调用发送异常，可能是参数问题")]
+        [Description("发送记录采集失败，结果为空")]
         Exception = 1,
-
-        #endregion
-
-        #region "代理平台错误"
-        /// <summary>
-        /// 内部错误
-        /// </summary>
-        [Description("内部错误")]
-        InternalError = 300301,
-
-        /// <summary>
-        /// 系统繁忙稍候再试
-        /// </summary>
-        [Description("系统繁忙稍候再试")]
-        SystemBusy = 300302,
-
-        #endregion
-
-        #region "调用方错误"
-        /// <summary>
-        /// url无法解析
-        /// </summary>
-        [Description("url无法解析")]
-        URLResolved = 300201,
-
-        /// <summary>
-        /// 请求缺少apikey，登录即可获取
-        /// </summary>
-        [Description("请求缺少apikey，登录即可获取")]
-        MissingApikey = 300202,
-
-        /// <summary>
-        /// 服务没有取到apikey或secretkey
-        /// </summary>
-        [Description("服务没有取到apikey或secretkey")]
-        ApikeyNULL = 300203,
-
-        /// <summary>
-        /// apikey不存在
-        /// </summary>
-        [Description("apikey不存在")]
-        ApikeyNotExist = 300204,
-
-        /// <summary>
-        /// api不存在
-        /// </summary
-        [Description("api不存在")]
-        ApiNotExist = 300205,
-
-        /// <summary>
-        /// api已关闭服务
-        /// </summary>
-        [Description("api已关闭服务")]
-        ApiOutService = 300206,
-
-        #endregion
-
-        #region "限制类错误"
-
-        /// <summary>
-        /// 用户请求过期
-        /// </summary>
-        [Description("用户请求过期")]
-        RequestExpired = 300101,
-
-        /// <summary>
-        /// 用户日调用量超限
-        /// </summary>
-        [Description("用户日调用量超限")]
-        UserCallOverrunPerDay = 300102,
-
-        /// <summary>
-        /// 服务每秒调用量超限
-        /// </summary>
-        [Description("服务每秒调用量超限")]
-        ServiceCallOverrunPerSecond = 300103,
-
-        /// <summary>
-        /// 服务日调用量超限
-        /// </summary>
-        [Description("服务日调用量超限")]
-        ServiceCallOverrunPerDay = 300104
 
         #endregion
     }

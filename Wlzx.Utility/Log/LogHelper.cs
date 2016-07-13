@@ -20,6 +20,7 @@ namespace Wlzx.Utility
         //log4net日志专用
         public static readonly log4net.ILog loginfo = log4net.LogManager.GetLogger("loginfo");
         public static readonly log4net.ILog logerror = log4net.LogManager.GetLogger("logerror");
+        public static readonly log4net.ILog logcs = log4net.LogManager.GetLogger("logconsole");
 
         public static void SetConfig()
         {
@@ -41,6 +42,18 @@ namespace Wlzx.Utility
                 loginfo.Info(info);
             }
         }
+
+        /// <summary>
+        /// Console输出的记录日志
+        /// </summary>
+        /// <param name="info"></param>
+        public static void WriteLogC(string info)
+        {
+            if (logcs.IsInfoEnabled)
+            {
+                logcs.Info(info);
+            }
+        }
         /// <summary>
         /// 错误日志
         /// </summary>
@@ -51,6 +64,29 @@ namespace Wlzx.Utility
             if (logerror.IsErrorEnabled)
             {
                 logerror.Error(info, se);
+            }
+        }
+        /// <summary>
+        /// 错误日志
+        /// </summary>
+        /// <param name="info"></param>
+        /// <param name="se"></param>
+        public static void WriteError(string info, Exception se)
+        {
+            if (logerror.IsErrorEnabled)
+            {
+                logerror.Error(info, se);
+            }
+        }
+        /// <summary>
+        /// 错误日志
+        /// </summary>
+        /// <param name="info"></param>
+        public static void WriteError(string info)
+        {
+            if (logerror.IsErrorEnabled)
+            {
+                logerror.Error(info, null);
             }
         }
 

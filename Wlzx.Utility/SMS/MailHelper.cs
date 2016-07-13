@@ -56,18 +56,8 @@ namespace Wlzx.Utility
             {
                 try
                 {
-                    //client = new System.Net.Mail.SmtpClient();
-                    //client.Host = Config.SmtpHost;
-                    //client.Port = 25;
-                    //client.DeliveryMethod = System.Net.Mail.SmtpDeliveryMethod.Network;
-                    //client.UseDefaultCredentials = true;
-                    //client.Credentials = new System.Net.NetworkCredential(Config.UserName, Config.Password);
-                    //client.EnableSsl = true;
-                    
                     client = new SmtpClient(Config.SmtpHost, Convert.ToInt32(Config.SmtpPort));
                     client.Credentials = new NetworkCredential(Config.UserName, Config.Password);
-                    //client.EnableSsl = true;
-                    //client.Send(m);
                 }
                 catch (Exception ex)
                 {
@@ -76,38 +66,9 @@ namespace Wlzx.Utility
             }
             try
             {
-                //MailMessage Message = new System.Net.Mail.MailMessage();
-                //Message.SubjectEncoding = System.Text.Encoding.UTF8;
-                //Message.BodyEncoding = System.Text.Encoding.UTF8;
-                //Message.Priority = System.Net.Mail.MailPriority.High;
-
-                //Message.From = new System.Net.Mail.MailAddress(Config.SendMail, Config.DisplayName);
-                ////添加邮件接收人地址
-                //string[] receivers = Receiver.Split(new char[] { ',' });
-                //Array.ForEach(receivers.ToArray(), ToMail => { Message.To.Add(ToMail); });
-
-                //Message.Subject = Subject;
-                //Message.Body = content;
-
-                //Message.IsBodyHtml = true;
-
-
-                //发送示例
-               // MailMessage m = new MailMessage
-               //("item@outofmemory.cn",
-               //"raja@outofmemory.cn",
-               //"This is the subject for the authorized email.",
-               //"This is the body of the authorized mail!...");
-
-               // // Send the message using authorization
-               // SmtpClient client = new SmtpClient("smtp.outofmemory.cn");
-               // client.Credentials = new NetworkCredential("user", "password");
-               // client.EnableSsl = true;
-               // client.Send(m);
-
-
                 MailMessage Message = new MailMessage();
                 Message.From = new MailAddress(Config.SendMail);
+                //添加邮件接收人地址
                 string[] receivers = Receiver.Split(new char[] { ',' });
                 Array.ForEach(receivers.ToArray(), ToMail => { Message.To.Add(ToMail); });
                 Message.Subject = Subject;

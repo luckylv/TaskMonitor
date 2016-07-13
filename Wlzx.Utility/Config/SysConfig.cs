@@ -28,6 +28,12 @@ namespace Wlzx.Utility
         public static string SqlConnect { get; set; }
 
         /// <summary>
+        /// 联通SMS数据库连接字符串信息
+        /// </summary>
+        [PathMap(Key = "LTsmsConnect")]
+        public static string LTsmsConnect { get; set; }
+
+        /// <summary>
         /// 邮件信息配置
         /// </summary>
         [PathMap(Key="MailInfo")]

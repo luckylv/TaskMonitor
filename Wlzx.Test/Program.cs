@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data.SqlClient;
 using Wlzx.Utility;
 
 namespace Wlzx.Test
@@ -8,8 +9,14 @@ namespace Wlzx.Test
         static void Main(string[] args)
         {
             AdminRun.Run();
+            
+            
 
             ConfigInit.InitConfig();
+
+
+
+            //SmsHelper.SendMessage("13958006233", "测试一下");
             QuartzHelper.InitScheduler();
             QuartzHelper.StartScheduler();
             
