@@ -34,6 +34,12 @@ namespace Wlzx.Utility
         public static string LTsmsConnect { get; set; }
 
         /// <summary>
+        /// 移动SMS数据库连接字符串信息
+        /// </summary>
+        [PathMap(Key = "YDsmsConnect")]
+        public static string YDsmsConnect { get; set; }
+
+        /// <summary>
         /// 邮件信息配置
         /// </summary>
         [PathMap(Key="MailInfo")]

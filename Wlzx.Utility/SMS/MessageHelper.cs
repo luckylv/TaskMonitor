@@ -64,7 +64,7 @@ namespace Wlzx.Utility
             {
                 //短信
                 case MessageType.SMS:
-                    code = SmsHelper.SendMessage(message.Receiver, message.Content);
+                    code = SmsHelper.SendMessage(ref message);
                     break;
                 case MessageType.EMAIL:
                     code = MailHelper.SendMessage(message.Receiver, message.Subject, message.Content);

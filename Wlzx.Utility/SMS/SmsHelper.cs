@@ -14,24 +14,54 @@ namespace Wlzx.Utility
     /// </summary>
     public class SmsHelper
     {
-
+        //联通发送SQL
         private static string LTinsertSQL = @"INSERT INTO [ShortMsg_New].[dbo].[SendSms]
                                                 ([phoneNumber]
                                                 ,[smsContent]
                                                 ,[smsTime]
                                                 ,[smsUser]
-                                                ,[staTime]
-                                                ,[endTime]
-                                                ,[status]
-                                                ,[extno]
-                                                ,[resultCode]
-                                                ,[resultDesc]
-                                                ,[failList])
-                            VALUES(@phoneNumber,@smsContent,@smsTime,7,null,null,0,null,null,null,null)";
-
+                                                ,[status])
+                            VALUES(@phoneNumber,@smsContent,getdate(),7,0)";
+        //联通获取短信ID
         private static string LTqueryIdSQL = @"Select MAX(smsIndex) AS ID FROM [ShortMsg_New].[dbo].[SendSms]";
-
+        //联通获取该ID发送状态
         private static string LTqueryStatus = @"Select * FROM [ShortMsg_New].[dbo].[SendSms] where smsIndex=@smsId";
+
+
+        //移动发送SQL
+        private static string YDinsertSQL = @"INSERT INTO [DB_CustomSMS].[dbo].[tbl_SMSendTask]
+                                                ([CreatorID]
+                                                ,[SmSendedNum]
+                                                ,[OperationType]
+                                                ,[SendType]
+                                                ,[OrgAddr]
+                                                ,[DestAddr]
+                                                ,[SM_Content]
+                                                ,[NeedStateReport]
+                                                ,[ServiceID]
+                                                ,[FeeType]
+                                                ,[FeeCode]
+                                                ,[MsgID]
+                                                ,[SMType]
+                                                ,[MessageID]
+                                                ,[DestAddrType]
+                                                ,[TaskStatus]
+                                                ,[SendLevel]
+                                                ,[SendState]
+                                                ,[TryTimes]
+                                                ,[SuccessID])
+                                          VALUES
+                                               ('0000',0,'API',1,'18600000',@phoneNumber,@smsContent,1,'TZJ0010101','01','0','0',0,'0',0,0,0,0,3,0)";
+        
+        //移动获取短信ID
+        private static string YDqueryIdSQL = @"Select MAX(ID) AS ID FROM [DB_CustomSMS].[dbo].[tbl_SMSendTask]";
+
+        //移动获取该ID发送状态
+        private static string YDqueryStatus = @"Select TaskStatus FROM [DB_CustomSMS].[dbo].[tbl_SMSendTask] where ID=@smsId";
+
+        //移动号码段
+        private static string[] YDZone = new String[] { "134", "135", "136", "137", "138", "139", "150", "151", "152", "157", "158", "159", "182", "183", "187", "188", "147", "145" };
+        
         /// <summary>
         /// 发送短信
         /// </summary>
@@ -42,17 +72,84 @@ namespace Wlzx.Utility
         {
             try
             {
-                //添加邮件接收人地址
+                //添加短信接收人地址
                 string[] receivers = receiver.Split(new char[] { ',' });
                 foreach (string phone in receivers)
                 {
                     //若发送失败，则重发此条短信一次
-                    if (SendOneMessage(phone, content)!=SMSCode.Success)
+                    if (YDSendOneMessage(phone, content) != SMSCode.Success)
                     {
-                        SendOneMessage(phone, content);
+                        YDSendOneMessage(phone, content);
                     }
                 }
                 return SMSCode.Success;
+
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteError("短信发送出错", ex);
+                LogHelper.WriteLogC("短信发送出错" + ex.Message);
+                return SMSCode.Exception;
+            }
+        }
+
+        /// <summary>
+        /// 发送短信v2
+        /// </summary>
+        /// <param name="receiver">短信接收人手机号码（多号码用,分隔）</param>
+        /// <param name="content">短信内容</param>
+        /// <returns>发送状态</returns>
+        public static SMSCode SendMessage(ref Message message)
+        {
+            try
+            {
+                //添加短信接收人地址
+                string[] receivers = message.Receiver.Split(new char[] { ',' });
+
+                foreach (string phone in receivers)
+                {
+                    if(YDZone.Contains(phone.Substring(0, 3))) //属于移动号码
+                    {
+                        if (YDSendOneMessage(phone, message.Content) == SMSCode.Success)
+                        {
+                            string newrev;
+                            if (message.Receiver.Contains(phone + ","))
+                            {
+                                newrev = message.Receiver.Replace(phone + ",", "");
+                            }
+                            else
+                            {
+                                newrev = message.Receiver.Replace(phone, "");
+                            }
+                             message.Receiver = newrev;
+                        }
+                    }
+                    else
+                    {
+                        if (LTSendOneMessage(phone, message.Content) == SMSCode.Success)
+                        {
+                            string newrev;
+                            if (message.Receiver.Contains(phone + ","))
+                            {
+                                newrev = message.Receiver.Replace(phone + ",", "");
+                            }
+                            else
+                            {
+                                newrev = message.Receiver.Replace(phone, "");
+                            }
+                            message.Receiver = newrev;
+                        }
+                    } 
+                }
+
+                if (string.IsNullOrWhiteSpace(message.Receiver.Trim()))  //如果名单已清空，则表示全部发送成功
+                {
+                    return SMSCode.Success;
+                }
+                else                    //名单非空则表示有短信未发出
+                {
+                    return SMSCode.Fail;
+                }
 
                 #region "老代码"
                 ////创建Httphelper对象
@@ -81,30 +178,27 @@ namespace Wlzx.Utility
             catch (Exception ex)
             {
                 LogHelper.WriteError("短信发送出错", ex);
-                LogHelper.WriteLogC("短信发送出错"+ex.Message);
+                LogHelper.WriteLogC("短信发送出错" + ex.Message);
                 return SMSCode.Exception;
             }
         }
 
-        public static SMSCode SendOneMessage(string oneReceiver, string content)
+        /// <summary>
+        /// 联通发送单条短信
+        /// </summary>
+        /// <param name="oneReceiver">短信接收人手机号码</param>
+        /// <param name="content">短信内容</param>
+        /// <returns>发送状态</returns>
+        public static SMSCode LTSendOneMessage(string oneReceiver, string content)
         {
             try
             {
                 //插入一条发送记录
-                DbHelper.ExecuteNonQuery(SysConfig.LTsmsConnect, LTinsertSQL, new { phoneNumber = oneReceiver, smsContent = content, smsTime = DateTime.Now.ToString() });
+                DbHelper.ExecuteNonQuery(SysConfig.LTsmsConnect, LTinsertSQL, new { phoneNumber = oneReceiver, smsContent = content});
                 //取出该条记录ID号
                 string smsId = DbHelper.ExecuteScalar<string>(SysConfig.LTsmsConnect, LTqueryIdSQL, null);
 
-                //等待2秒首次查询发送状态
-                Thread.Sleep(2000);
-                LTsmsUtil current = DbHelper.Single<LTsmsUtil>(SysConfig.LTsmsConnect, LTqueryStatus, new { smsId = smsId });
-                if (current == null)
-                {
-                    string logstr = "发送短信错误，错误原因：第1次无法检索短信发送状态，请检查数据库连接";
-                    LogHelper.WriteLogC(logstr);
-                    LogHelper.WriteError(logstr);
-                    return SMSCode.Exception;
-                }
+                LTsmsUtil current = null;
 
                 //若无状态则每隔1秒查一次状态，共5次
                 int checkTime = 0;
@@ -114,7 +208,7 @@ namespace Wlzx.Utility
                     current = DbHelper.Single<LTsmsUtil>(SysConfig.LTsmsConnect, LTqueryStatus, new { smsId = smsId });
                     if (current == null)
                     {
-                        string logstr = "发送短信错误，错误原因：第" + checkTime.ToString() + "次无法检索到短信发送状态，请检查数据库连接";
+                        string logstr = "发送短信错误，错误原因：第" + checkTime+1.ToString() + "次无法检索到短信发送状态，请检查数据库连接";
                         LogHelper.WriteLogC(logstr);
                         LogHelper.WriteError(logstr);
                         return SMSCode.Exception;
@@ -145,7 +239,7 @@ namespace Wlzx.Utility
                     LogHelper.WriteError(logstr);
                     return SMSCode.Fail;
                 }
-       
+
             }
             catch (Exception ex)
             {
@@ -155,7 +249,65 @@ namespace Wlzx.Utility
             }
         }
 
+        /// <summary>
+        /// 移动发送单条短信
+        /// </summary>
+        /// <param name="oneReceiver">短信接收人手机号码</param>
+        /// <param name="content">短信内容</param>
+        /// <returns>发送状态</returns>
+        public static SMSCode YDSendOneMessage(string oneReceiver, string content)
+        {
+            try
+            {
+                //插入一条发送记录
+                DbHelper.ExecuteNonQuery(SysConfig.YDsmsConnect, YDinsertSQL, new { phoneNumber = oneReceiver, smsContent = content });
+                //取出该条记录ID号
+                string smsId = DbHelper.ExecuteScalar<string>(SysConfig.YDsmsConnect, YDqueryIdSQL, null);
+                //检查短信发送状态 
+                string YDSMSState = DbHelper.ExecuteScalar<string>(SysConfig.YDsmsConnect, YDqueryStatus, new { smsId = smsId});
+
+                //若无状态则每隔1秒查一次状态，共5次
+                int checkTime = 0;
+                while (checkTime < 5 && string.Equals(YDSMSState,"0"))
+                {
+                    Thread.Sleep(1000);
+                    //取出该条状态
+                    YDSMSState = DbHelper.ExecuteScalar<string>(SysConfig.YDsmsConnect, YDqueryStatus, new { smsId = smsId });
+                    if (YDSMSState == null)
+                    {
+                        string logstr = "发送短信错误，错误原因：第" + checkTime.ToString() + "次无法检索到短信发送状态，请检查数据库连接";
+                        LogHelper.WriteLogC(logstr);
+                        LogHelper.WriteError(logstr);
+                        return SMSCode.Exception;
+                    }
+                }
+
+                //状态为0则发送成功
+                if (string.Equals(YDSMSState, "1"))
+                {
+                    string logstr = "成功发送短信至" + oneReceiver + "，内容:" + content;
+                    LogHelper.WriteLogC(logstr);
+                    LogHelper.WriteLog(logstr);
+                    return SMSCode.Success;
+                }
+                else//状态为非1则发送失败
+                {
+                    string logstr = "发送短信失败，未到达" + oneReceiver + "，内容:" + content + "，失败原因：获取短信状态为非1";
+                    LogHelper.WriteLogC(logstr);
+                    LogHelper.WriteError(logstr);
+                    return SMSCode.Fail;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteError("短信发送出错", ex);
+                LogHelper.WriteLogC("短信发送出错" + ex.Message);
+                return SMSCode.Exception;
+            }
+        }
     }
+
+
 
 
 
