@@ -36,6 +36,16 @@
     <Reference Include="Common.Logging.Core">
       <HintPath>..\packages\Common.Logging.Core.3.0.0\lib\net40\Common.Logging.Core.dll</HintPath>
     </Reference>
+    <Reference Include="HtmlAgilityPack">
+      <HintPath>..\dll\HtmlAgilityPack.dll</HintPath>
+    </Reference>
+    <Reference Include="HttpHelper">
+      <HintPath>..\dll\HttpHelper.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net40\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="Quartz">
       <HintPath>..\packages\Quartz.2.3.3\lib\net40\Quartz.dll</HintPath>
     </Reference>
@@ -49,8 +59,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TaskSet\AutoRunJob.cs" />
+    <Compile Include="TaskSet\IpProxyJob.cs" />
     <Compile Include="TaskSet\SendMessageJob.cs" />
     <Compile Include="TaskSet\TestJob.cs" />
+    <Compile Include="Utils\IpProxyGet.cs" />
     <Compile Include="Utils\TaskLog.cs" />
   </ItemGroup>
   <ItemGroup>

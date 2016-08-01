@@ -17,5 +17,27 @@ namespace Wlzx.Task.Utils
         /// 发送消息任务异常日志
         /// </summary>
         public static LogHelper SendMessageLogError = new LogHelper("SendMessageJob", "error");
+
+        /// <summary>
+        /// 外部启动任务普通日志
+        /// </summary>
+        public static LogHelper AutoRunLogInfo = new LogHelper("AutoRunJob", "info");
+
+        /// <summary>
+        /// 外部启动任务异常日志
+        /// </summary>
+        public static LogHelper AutoRunLogError = new LogHelper("AutoRunJob", "error");
+
+        /// <summary>
+        /// 外部启动任务普通日志
+        /// </summary>
+        public static LogHelper IpProxyLogInfo = new LogHelper("IpProxyJob", "info");
+
+        /// <summary>
+        /// 外部启动任务异常日志
+        /// </summary>
+        public static LogHelper IpProxyLogError = new LogHelper("IpProxyJob", "error");
+
+
     }
 }
