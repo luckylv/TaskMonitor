@@ -38,6 +38,16 @@ namespace Wlzx.Task.Utils
         /// </summary>
         public static LogHelper IpProxyLogError = new LogHelper("IpProxyJob", "error");
 
+        /// <summary>
+        /// 自动站监控任务普通日志
+        /// </summary>
+        public static LogHelper AwsMonitorLogInfo = new LogHelper("AwsMonitorJob", "info");
+
+        /// <summary>
+        /// 自动站监控任务异常日志
+        /// </summary>
+        public static LogHelper AwsMonitorLogError = new LogHelper("AwsMonitorJob", "error");
+
 
     }
 }

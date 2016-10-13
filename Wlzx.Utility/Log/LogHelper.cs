@@ -122,7 +122,7 @@ namespace Wlzx.Utility
         }
 
         /// <summary>
-        /// 普通的文件记录日志
+        /// 单独文件的普通文件记录日志
         /// </summary>
         /// <param name="info"></param>
         public void WriteLogE(string info)
@@ -135,7 +135,7 @@ namespace Wlzx.Utility
         }
 
         /// <summary>
-        /// 错误日志
+        /// 单独文件的错误日志
         /// </summary>
         /// <param name="info"></param>
         public void WriteLogE(string info, Exception ex)

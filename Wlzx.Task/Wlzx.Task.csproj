@@ -60,6 +60,7 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TaskSet\AutoRunJob.cs" />
+    <Compile Include="TaskSet\AwsMonitorJob.cs" />
     <Compile Include="TaskSet\IpProxyJob.cs" />
     <Compile Include="TaskSet\SendMessageJob.cs" />
     <Compile Include="TaskSet\TestJob.cs" />
