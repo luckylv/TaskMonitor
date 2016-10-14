@@ -7,6 +7,7 @@ using Wlzx.Utility;
 using System.IO;
 using System.Text.RegularExpressions;
 using Wlzx.Task.Utils;
+using Newtonsoft.Json;
 
 namespace Wlzx.Task.TaskSet
 {
@@ -22,7 +23,16 @@ namespace Wlzx.Task.TaskSet
             try
             {
                 //获取任务执行参数,任务启动时会读取配置文件TaskConfig.xml节点TaskParam的值传递过来
-                //object objParam = context.JobDetail.JobDataMap.Get("TaskParam");
+                LogHelper.WriteLogC("test");
+                object objParam = context.JobDetail.JobDataMap.Get("TaskParam");
+                if (objParam != null)
+                {
+                    AwsParam Param = JsonConvert.DeserializeObject<AwsParam>(objParam.ToString());
+                    LogHelper.WriteLogC("参数为:"+Param.LogUrl+"   "+Param.RegexStart+"   "+Param.RegexOne+"   "+Param.RunTimeSpan.ToString()+"   "+Param.ServerID);
+
+
+                }
+                
                 //LogHelper.WriteLog("测试任务，当前系统时间：" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
                 double checkTimeMin = 20;
                 bool isTimeUp = false;
@@ -61,9 +71,39 @@ namespace Wlzx.Task.TaskSet
 
                                 //更新数据
 
-                                string YDSMSState = DbHelper.ExecuteScalar<string>(SysConfig.SqlConnect, YDqueryStatus, new { smsId = smsId });
+                                string stationQuery = @"SELECT [Station],[ValidTime],[ValidNumber],[IsWarn] FROM [TaskManager].[dbo].[AwsMonitorTab] where Station=@Station";
 
+                                string stationQueryState = SQLHelper.ExecuteScalar<string>(stationQuery, new { Station = result[4].ToString() });
 
+                                if (stationQueryState == null)
+                                {
+                                    string insertAWS = @"INSERT INTO [TaskManager].[dbo].[AwsMonitorTab]
+                                                              ([Station]
+                                                              ,[ValidTime]
+                                                              ,[ValidNumber]
+                                                              ,[IsWarn])
+                                                         VALUES(@Station,@ValidTime,@ValidNumber,@isWarn)";
+
+                                    //插入一条发送记录
+                                    //TaskLog.AwsMonitorLogInfo.WriteLogE("插入一行数据: " + result[4].ToString() + "   " + result[1].ToString() + "   " + result[5].ToString());
+                                    SQLHelper.ExecuteNonQuery(insertAWS, new { Station = result[4].ToString(), ValidTime = Convert.ToDateTime(result[1].ToString()), ValidNumber = result[5].ToString(),isWarn=true });
+
+                                }
+                                else
+                                {
+                                    string updateAWS = @"UPDATE [TaskManager].[dbo].[AwsMonitorTab]
+                                                          SET [ValidTime] = '"+Convert.ToDateTime(result[1].ToString())+
+                                                           @"',[ValidNumber] = "+result[5].ToString()+
+                                                          " WHERE Station='" + result[4].ToString() + "' and ValidTime<'" + Convert.ToDateTime(result[1].ToString()) + "'";
+                                    //TaskLog.AwsMonitorLogInfo.WriteLogE(updateAWS);
+//                                    string updateAWS1 = @"UPDATE [TaskManager].[dbo].[AwsMonitorTab]
+//                                                          SET [ValidTime] = '@ValidTime'" +
+//                                                           @",[ValidNumber] = @ValidNumber"+
+//                                                          " WHERE Station='@Station' and ValidTime<'@ValidTime'";
+                                    //更新一条数据
+                                    SQLHelper.ExecuteNonQuery(updateAWS);
+                                    //SQLHelper.ExecuteNonQuery(updateAWS1, new { Station = result[4].ToString(), ValidTime = Convert.ToDateTime(result[1].ToString()), ValidNumber = result[5].ToString()});
+                                }
 
 
 
@@ -94,5 +134,37 @@ namespace Wlzx.Task.TaskSet
                 //e2.UnscheduleAllTriggers=true; 
             }
         }
+    }
+
+
+    /// <summary>
+    /// 执行参数
+    /// </summary>
+    public class AwsParam
+    {
+        /// <summary>
+        /// 日志文件路径
+        /// </summary>
+        public string LogUrl { get; set; }
+
+        /// <summary>
+        /// 单次匹配起点正则表达式
+        /// </summary>
+        public string RegexStart { get; set; }
+
+        /// <summary>
+        /// 匹配单条记录正则表达式
+        /// </summary>
+        public string RegexOne { get; set; }
+
+        /// <summary>
+        /// 服务器ID
+        /// </summary>
+        public string ServerID { get; set; }
+
+        /// <summary>
+        /// 运行间隔（分钟）
+        /// </summary>
+        public int RunTimeSpan { get; set; }
     }
 }
