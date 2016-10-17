@@ -23,12 +23,47 @@ namespace Wlzx.Task.TaskSet
             try
             {
                 //获取任务执行参数,任务启动时会读取配置文件TaskConfig.xml节点TaskParam的值传递过来
-                LogHelper.WriteLogC("test");
+                LogHelper.WriteLogC("本次任务开始运行");
                 object objParam = context.JobDetail.JobDataMap.Get("TaskParam");
+                object LastRunTimeParam = context.JobDetail.JobDataMap.Get("LastRunTime");
+                double RunTimeSp=1;  //默认向上搜索时间为1
+                DateTime RunAt=DateTime.Now;
+                DateTime LastRunAt=DateTime.Now;
+
+                if(context.PreviousFireTimeUtc==null)
+                {
+                    LastRunAt=(DateTime)LastRunTimeParam;
+                    LogHelper.WriteLogC("PreviousFireTimeUtc is null");
+                }
+                else
+                {
+                    LastRunAt = context.PreviousFireTimeUtc.Value.LocalDateTime;
+                    //context.PreviousFireTimeUtc.Value.DateTime.AddHours(8).ToString("yyyy-MM-dd HH:mm:ss")
+                }
+                    
+
+                if (LastRunTimeParam != null)
+                {
+                    //LogHelper.WriteLog(string.Format("任务“{0}”启动成功,未来5次运行时间如下:", taskUtil.TaskName));
+                    //List<DateTime> list = QuartzHelper.GetTaskeFireTime(CronExpressionStringParam.ToString(), 1);
+
+                    TimeSpan ts = RunAt - LastRunAt;
+                    RunTimeSp = ts.TotalMinutes + 1;    //获取最后一次运行时间+1分钟，作为日志向上搜索时间
+                }
+
                 if (objParam != null)
                 {
-                    AwsParam Param = JsonConvert.DeserializeObject<AwsParam>(objParam.ToString());
-                    LogHelper.WriteLogC("参数为:"+Param.LogUrl+"   "+Param.RegexStart+"   "+Param.RegexOne+"   "+Param.RunTimeSpan.ToString()+"   "+Param.ServerID);
+                    
+                    //JsonConvert.DeserializeObject<AwsParam>(objParam.ToString(),JsonSerializerSettings.)
+                    AwsParam Param = JsonConvert.DeserializeObject<AwsParam>(objParam.ToString().Replace(@"\",@"\\"));//将参数加入转义符后解析
+                    LogHelper.WriteLogC("参数为:LogUrl:" + Param.LogUrl + "   DTFormat:" +
+                                                  Param.DTFormat + "   ServerID:" +
+                                                  Param.ServerID + "   RegexStart:" +
+                                                  Param.RegexStart + "   RegexOne:" +
+                                                  Param.RegexOne + "   RunAt:" +
+                                                  RunAt.ToString() + "   LastRun:" +
+                                                  LastRunAt + "   RunTimeSpan:" +
+                                                  RunTimeSp.ToString());
 
 
                 }
@@ -143,9 +178,19 @@ namespace Wlzx.Task.TaskSet
     public class AwsParam
     {
         /// <summary>
-        /// 日志文件路径
+        /// 日志文件路径,用DTFormat代替日期部分
         /// </summary>
         public string LogUrl { get; set; }
+
+        /// <summary>
+        /// 文件名中的日期格式设定
+        /// </summary>
+        public string DTFormat { get; set; }
+
+        /// <summary>
+        /// 服务器标示
+        /// </summary>
+        public string ServerID { get; set; }
 
         /// <summary>
         /// 单次匹配起点正则表达式
@@ -158,12 +203,7 @@ namespace Wlzx.Task.TaskSet
         public string RegexOne { get; set; }
 
         /// <summary>
-        /// 服务器ID
-        /// </summary>
-        public string ServerID { get; set; }
-
-        /// <summary>
-        /// 运行间隔（分钟）
+        /// 每次检索的向前时间跨度（分钟）
         /// </summary>
         public int RunTimeSpan { get; set; }
     }

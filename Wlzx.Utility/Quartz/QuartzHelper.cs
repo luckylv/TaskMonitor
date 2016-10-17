@@ -145,6 +145,7 @@ namespace Wlzx.Utility
                 trigger.Description = taskUtil.TaskName;
                 //添加任务执行参数
                 job.JobDataMap.Add("TaskParam", taskUtil.TaskParam);
+                job.JobDataMap.Add("LastRunTime", taskUtil.LastRunTime);
                 scheduler.ScheduleJob(job, trigger);
                 if(taskUtil.Status==TaskStatus.STOP)
                 {
