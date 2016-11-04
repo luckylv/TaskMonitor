@@ -41,6 +41,16 @@ namespace Wlzx.Utility.Quartz
         public string DTFormat { get; set; }
 
         /// <summary>
+        /// 子文件夹中设定,可为空
+        /// </summary>
+        public string ShareSub { get; set; }
+
+        /// <summary>
+        /// 子文件夹中的日期格式设定,可为空
+        /// </summary>
+        public string SubDTFormat { get; set; }
+
+        /// <summary>
         /// 入库的表名称
         /// </summary>
         public string DBTable { get; set; }

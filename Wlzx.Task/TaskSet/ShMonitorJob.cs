@@ -9,15 +9,14 @@ using System.Text.RegularExpressions;
 using Wlzx.Task.Utils;
 using Newtonsoft.Json;
 using Wlzx.Utility.Quartz;
-
 namespace Wlzx.Task.TaskSet
 {
-     /// <summary>
-    /// 土壤水分监控任务
+    /// <summary>
+    /// 自动站监控任务
     /// </summary>
     ///<remarks>DisallowConcurrentExecution属性标记任务不可并行，要是上一任务没运行完即使到了运行时间也不会运行</remarks>
     [DisallowConcurrentExecution]
-    public class TrsfMonitorJob: IJob
+    public class ShMonitorJob : IJob
     {
         public void Execute(IJobExecutionContext context)
         {
@@ -86,11 +85,12 @@ namespace Wlzx.Task.TaskSet
                 string[] tt = File.ReadAllLines(logFileFull, Encoding.Default);  //读取整个日志文件
                 long calstation = 0;   //更新记录计数器
                 Regex regStart = new Regex(Param.RegexStart);
+                //Regex regStart = new Regex(@"\[(?<uptime>(\d{2,4}-?){3}\s+(\d{2}:?){3})\]本次ftp上传文件\[(?<upfiles>\d?)\]个至ftp服务器\[(\d{2,3}\.?){4}\]目录");
                 Regex regOne = new Regex(Param.RegexOne);
                 Console.WriteLine("1" + Param.RegexOne);
                 for (int i = tt.Length - 1; i >= 0; i--)
                 {
-
+                    
                     if (regStart.IsMatch(tt[i].ToString()))    //正则表达式匹配
                     {
                         var startResult = regStart.Match(tt[i].ToString()).Groups;
@@ -151,7 +151,7 @@ namespace Wlzx.Task.TaskSet
             catch (Exception ex)
             {
                 JobExecutionException e2 = new JobExecutionException(ex);
-                LogHelper.WriteError("土壤水分监控任务异常", ex);
+                LogHelper.WriteError("山洪站监控任务异常", ex);
                 //1.立即重新执行任务 
                 e2.RefireImmediately = true;
                 //2 立即停止所有相关这个任务的触发器
