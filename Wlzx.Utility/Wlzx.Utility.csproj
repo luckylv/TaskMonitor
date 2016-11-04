@@ -72,6 +72,7 @@
     <Compile Include="Log\LogHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Quartz\CustomTriggerListener.cs" />
+    <Compile Include="Quartz\MonitorParam.cs" />
     <Compile Include="Quartz\QuartzHelper.cs" />
     <Compile Include="Quartz\TaskUtil.cs" />
     <Compile Include="Reflection\DynamicMethodFactory.cs" />

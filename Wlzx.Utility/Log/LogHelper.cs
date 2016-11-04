@@ -44,6 +44,22 @@ namespace Wlzx.Utility
         }
 
         /// <summary>
+        /// 普通的文件记录日志和窗口输出日志
+        /// </summary>
+        /// <param name="info"></param>
+        public static void WriteLogAndC(string info)
+        {
+            if (loginfo.IsInfoEnabled)
+            {
+                loginfo.Info(info);
+            }
+            if (logcs.IsInfoEnabled)
+            {
+                logcs.Info(info);
+            }
+        }
+
+        /// <summary>
         /// Console输出的记录日志
         /// </summary>
         /// <param name="info"></param>
@@ -54,18 +70,18 @@ namespace Wlzx.Utility
                 logcs.Info(info);
             }
         }
-        /// <summary>
-        /// 错误日志
-        /// </summary>
-        /// <param name="info"></param>
-        /// <param name="se"></param>
-        public static void WriteLog(string info, Exception se)
-        {
-            if (logerror.IsErrorEnabled)
-            {
-                logerror.Error(info, se);
-            }
-        }
+        ///// <summary>
+        ///// 错误日志
+        ///// </summary>
+        ///// <param name="info"></param>
+        ///// <param name="se"></param>
+        //public static void WriteLog(string info, Exception se)
+        //{
+        //    if (logerror.IsErrorEnabled)
+        //    {
+        //        logerror.Error(info, se);
+        //    }
+        //}
         /// <summary>
         /// 错误日志
         /// </summary>
@@ -87,6 +103,39 @@ namespace Wlzx.Utility
             if (logerror.IsErrorEnabled)
             {
                 logerror.Error(info, null);
+            }
+        }
+
+        /// <summary>
+        /// 输出错误日志和窗口日志
+        /// </summary>
+        /// <param name="info"></param>
+        public static void WriteErrorAndC(string info)
+        {
+            if (logerror.IsErrorEnabled)
+            {
+                logerror.Error(info, null);
+            }
+            if (logcs.IsInfoEnabled)
+            {
+                logcs.Info(info);
+            }
+        }
+
+        /// <summary>
+        /// 输出错误日志和窗口日志2
+        /// </summary>
+        /// <param name="info"></param>
+        /// <param name="se"></param>
+        public static void WriteErrorAndC2(string info, Exception se)
+        {
+            if (logerror.IsErrorEnabled)
+            {
+                logerror.Error(info, se);
+            }
+            if (logcs.IsInfoEnabled)
+            {
+                logcs.Info(info, se);
             }
         }
 
@@ -169,6 +218,7 @@ namespace Wlzx.Utility
                 try
                 {
                     repository = LogManager.CreateRepository(repositoryName);
+                    
                 }
                 catch (Exception)
                 {
@@ -236,9 +286,9 @@ namespace Wlzx.Utility
             fileAppender.Name = "LogFileAppender";
             fileAppender.File = txtLogPath;
             fileAppender.AppendToFile = true;
-            fileAppender.MaxSizeRollBackups = 100;
-            fileAppender.MaximumFileSize = "1MB";
-            fileAppender.RollingStyle = log4net.Appender.RollingFileAppender.RollingMode.Size;
+            fileAppender.MaxSizeRollBackups = 45;
+            //fileAppender.MaximumFileSize = "1MB";
+            fileAppender.RollingStyle = log4net.Appender.RollingFileAppender.RollingMode.Date;
 
             PatternLayout patternLayout = new PatternLayout();
             patternLayout.ConversionPattern = "%-5p %d [%c] %m%n";

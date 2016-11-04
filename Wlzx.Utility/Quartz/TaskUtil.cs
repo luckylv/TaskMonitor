@@ -96,11 +96,11 @@ namespace Wlzx.Utility
         /// <summary>
         /// 运行状态
         /// </summary>
-        RUN = 0,
+        RUN = 1,
         /// <summary>
         /// 停止状态
         /// </summary>
-        STOP = 1
+        STOP = 0
     }
 
     /// <summary>
@@ -330,7 +330,7 @@ namespace Wlzx.Utility
             {
                 result.HasError = true;
                 result.Message = "任务Cron表达式设置错误";
-                LogHelper.WriteLog("任务Cron表达式设置错误", ex);
+                LogHelper.WriteError("任务Cron表达式设置错误", ex);
             }
             return result;
         }

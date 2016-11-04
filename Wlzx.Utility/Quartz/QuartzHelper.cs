@@ -9,6 +9,8 @@ using System.Collections.Specialized;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using Wlzx.Utility.Quartz;
+using Newtonsoft.Json;
 
 namespace Wlzx.Utility
 {
@@ -64,7 +66,7 @@ namespace Wlzx.Utility
             }
             catch (Exception ex)
             {
-                LogHelper.WriteLog("任务调度初始化失败！", ex);
+                LogHelper.WriteError("任务调度初始化失败！", ex);
             }
         }
 
@@ -93,7 +95,7 @@ namespace Wlzx.Utility
                             }
                             catch(Exception e)
                             {
-                                LogHelper.WriteLog(string.Format("任务“{0}”启动失败！",taskUtil.TaskName),e);
+                                LogHelper.WriteErrorAndC2(string.Format("任务“{0}”启动失败！",taskUtil.TaskName),e);
                             }
                         }
                     }
@@ -102,7 +104,7 @@ namespace Wlzx.Utility
             }
             catch (Exception ex)
             {
-                LogHelper.WriteLog("任务调度启动失败！",ex);
+                LogHelper.WriteError("任务调度启动失败！",ex);
             }
         }
 
@@ -129,6 +131,7 @@ namespace Wlzx.Utility
         /// </summary>
         public static void ScheduleJob(TaskUtil taskUtil,bool isDeleteOldTask=false)
         {
+            
             if(isDeleteOldTask)
             {
                 //按设置删除现有已存在任务
@@ -138,15 +141,7 @@ namespace Wlzx.Utility
             //验证是否正确的Cron表达式
             if (ValidExpression(taskUtil.CronExpressionString))
             {
-                IJobDetail job = new JobDetailImpl(taskUtil.TaskID.ToString(), GetClassInfo(taskUtil.Assembly, taskUtil.Class));
-                CronTriggerImpl trigger = new CronTriggerImpl();
-                trigger.CronExpressionString = taskUtil.CronExpressionString;
-                trigger.Name = taskUtil.TaskID.ToString();
-                trigger.Description = taskUtil.TaskName;
-                //添加任务执行参数
-                job.JobDataMap.Add("TaskParam", taskUtil.TaskParam);
-                job.JobDataMap.Add("LastRunTime", taskUtil.LastRunTime);
-                scheduler.ScheduleJob(job, trigger);
+                //scheduler.ScheduleJob(job, trigger);
                 if(taskUtil.Status==TaskStatus.STOP)
                 {
                     JobKey jk = new JobKey(taskUtil.TaskID.ToString());
@@ -154,11 +149,30 @@ namespace Wlzx.Utility
                 }
                 else
                 {
+                    IJobDetail job = new JobDetailImpl(taskUtil.TaskID.ToString(), GetClassInfo(taskUtil.Assembly, taskUtil.Class));
+                    CronTriggerImpl trigger = new CronTriggerImpl();
+                    trigger.CronExpressionString = taskUtil.CronExpressionString;
+                    trigger.Name = taskUtil.TaskID.ToString();
+                    trigger.Description = taskUtil.TaskName;
+                    //添加任务执行参数
+                    Console.WriteLine("正在启动" + taskUtil.TaskName);
+                    job.JobDataMap.Add("TaskParam", taskUtil.TaskParam);
+                    job.JobDataMap.Add("LastRunTime", taskUtil.LastRunTime);
+                    job.JobDataMap.Add("TaskName", taskUtil.TaskName);
+
+                    scheduler.ScheduleJob(job, trigger);
                     LogHelper.WriteLog(string.Format("任务“{0}”启动成功,未来5次运行时间如下:", taskUtil.TaskName));
                     List<DateTime> list = GetTaskeFireTime(taskUtil.CronExpressionString, 5);
                     foreach (var time in list)
                     {
                         LogHelper.WriteLog(time.ToString());
+                    }
+
+                    //映射磁盘
+                    MonitorParam Param = JsonConvert.DeserializeObject<MonitorParam>(taskUtil.TaskParam.Replace(@"\", @"\\"));//将参数\加入转义符后解析为\\
+                    if (!ConfigInit.Connect(Param.Url, Param.ShareName, Param.User, Param.Pw))
+                    {
+                        LogHelper.WriteErrorAndC("任务:" + taskUtil.TaskName + " 共享文件夹映射失败！");
                     }
                 }
             }
@@ -238,7 +252,7 @@ namespace Wlzx.Utility
             }
             catch (Exception ex)
             {
-                LogHelper.WriteLog("任务调度停止失败！", ex);
+                LogHelper.WriteError("任务调度停止失败！", ex);
             }
         }
 

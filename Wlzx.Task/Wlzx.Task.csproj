@@ -64,6 +64,7 @@
     <Compile Include="TaskSet\IpProxyJob.cs" />
     <Compile Include="TaskSet\SendMessageJob.cs" />
     <Compile Include="TaskSet\TestJob.cs" />
+    <Compile Include="TaskSet\TrsfMonitorJob.cs" />
     <Compile Include="Utils\IpProxyGet.cs" />
     <Compile Include="Utils\TaskLog.cs" />
   </ItemGroup>

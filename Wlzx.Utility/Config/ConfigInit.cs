@@ -5,6 +5,7 @@ using System.Text;
 using System.Xml;
 using System.Reflection;
 using System.IO;
+using System.Diagnostics;
 
 namespace Wlzx.Utility
 {
@@ -158,6 +159,56 @@ namespace Wlzx.Utility
             {
                 return value;
             }
+        }
+
+
+        /// <summary>
+        /// 连接远程共享路径 
+        /// </summary>
+        /// <param name="remoteHost">remote server IP or machinename.domain name</param>
+        /// <param name="shareName">share name</param>
+        /// <param name="userName">user name of remote share access account</param>
+        /// <param name="passWord">password of remote share access account</param>
+        /// <returns>connect result</returns>        
+        public static bool Connect(string remoteHost, string shareName, string userName, string passWord)
+        {
+            bool Flag = false;
+            Process proc = new Process();
+            try
+            {
+                proc.StartInfo.FileName = "cmd.exe";
+                proc.StartInfo.UseShellExecute = false;
+                proc.StartInfo.RedirectStandardInput = true;
+                proc.StartInfo.RedirectStandardOutput = true;
+                proc.StartInfo.RedirectStandardError = true;
+                proc.StartInfo.CreateNoWindow = true;
+                proc.Start();
+                string dosLine = @"net use \\" + remoteHost + @"\" + shareName + " /User:" + userName + " " + passWord + " /PERSISTENT:YES";
+                Console.WriteLine(dosLine);
+                proc.StandardInput.WriteLine(dosLine);
+                proc.StandardInput.WriteLine("exit");
+                while (!proc.HasExited)
+                {
+                    proc.WaitForExit(1000);
+                }
+                
+                string errormsg = proc.StandardError.ReadToEnd();
+                proc.StandardError.Close();
+                if (String.IsNullOrEmpty(errormsg))
+                {
+                    Flag = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            finally
+            {
+                proc.Close();
+                proc.Dispose();
+            }
+            return Flag;
         }
 
     }

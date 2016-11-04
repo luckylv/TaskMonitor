@@ -11,6 +11,9 @@ namespace Wlzx.Test
             AdminRun.Run();
             ConfigInit.InitConfig();
 
+            //ConfigInit.Connect("172.21.142.236", "Log(trsf)", "admin", "8880203");
+            //Console.WriteLine(ConfigInit.Connect("172.21.142.236", "Log(trsf)", "admin", "8880203").ToString());
+
             //SmsHelper.SendMessage("13958006233", "测试一下");
             QuartzHelper.InitScheduler();
             QuartzHelper.StartScheduler();

@@ -79,7 +79,7 @@ namespace Wlzx.Utility
             }
             catch (Exception ex)
             {
-                LogHelper.WriteLog("邮件发送失败", ex);
+                LogHelper.WriteError("邮件发送失败", ex);
                 return SMSCode.Exception;
             }
         }
