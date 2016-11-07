@@ -59,6 +59,7 @@ namespace Wlzx.Task.TaskSet
                 #region 该段为获取日志每次向前查找的时间点
                 object LastRunTimeParam = context.JobDetail.JobDataMap.Get("LastRunTime");
                 double RunTimeSp = 10;  //默认向上搜索时间为10分钟
+                RunTimeSp = Convert.ToDouble(Param.RunTimeSPMin);
                 DateTime RunAt = DateTime.Now;      //本次运行时间
                 DateTime LastRunAt = DateTime.Now.AddHours(-5);  //上次运行时间，默认为前推5小时
                 bool isTimeUp = false;   //向上搜索到达标志
@@ -77,17 +78,16 @@ namespace Wlzx.Task.TaskSet
                 }
 
                 TimeSpan ts = RunAt - LastRunAt;
-                RunTimeSp = ts.TotalMinutes + 10;    //获取最后一次运行时间+10分钟，作为日志向上搜索时间
+                RunTimeSp = ts.TotalMinutes + RunTimeSp;    //获取最后一次运行时间+10分钟，作为日志向上搜索时间
                 #endregion
 
-                LogHelper.WriteLogAndC("本次\"" + context.JobDetail.JobDataMap.Get("TaskName").ToString() + "\"任务开始运行,搜索文件为：" + logFileFull + " ,上一次运行在" + LastRunAt.ToString());
+                LogHelper.WriteLogAndC("本次\"" + context.JobDetail.JobDataMap.Get("TaskName").ToString() + "\"任务开始运行,搜索文件为：" + logFileFull + " ,上一次运行在" + LastRunAt.ToString() + " ,向上搜索至" + RunAt.AddMinutes(-RunTimeSp).ToString());
                 //TaskLog.AwsMonitorLogInfo.WriteLogE("本次\"" + context.JobDetail.JobDataMap.Get("TaskName").ToString() + "\"任务开始运行,搜索文件为：" + logFileFull);
 
                 string[] tt = File.ReadAllLines(logFileFull, Encoding.Default);  //读取整个日志文件
                 long calstation = 0;   //更新记录计数器
                 Regex regStart = new Regex(Param.RegexStart);
                 Regex regOne = new Regex(Param.RegexOne);
-                Console.WriteLine(Param.RegexStart);
                 for (int i = tt.Length - 1; i >= 0; i--)
                 {
 

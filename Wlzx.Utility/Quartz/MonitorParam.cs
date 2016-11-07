@@ -51,6 +51,11 @@ namespace Wlzx.Utility.Quartz
         public string SubDTFormat { get; set; }
 
         /// <summary>
+        /// 向上搜索时间跨度,单位分钟
+        /// </summary>
+        public string RunTimeSPMin { get; set; }
+
+        /// <summary>
         /// 入库的表名称
         /// </summary>
         public string DBTable { get; set; }
@@ -64,6 +69,5 @@ namespace Wlzx.Utility.Quartz
         /// 匹配单条记录正则表达式
         /// </summary>
         public string RegexOne { get; set; }
-
     }
 }

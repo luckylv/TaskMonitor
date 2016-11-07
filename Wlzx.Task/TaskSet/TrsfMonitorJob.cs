@@ -59,6 +59,7 @@ namespace Wlzx.Task.TaskSet
                 #region 该段为获取日志每次向前查找的时间点
                 object LastRunTimeParam = context.JobDetail.JobDataMap.Get("LastRunTime");
                 double RunTimeSp = 10;  //默认向上搜索时间为10分钟
+                RunTimeSp = Convert.ToDouble(Param.RunTimeSPMin);
                 DateTime RunAt = DateTime.Now;      //本次运行时间
                 DateTime LastRunAt = DateTime.Now.AddHours(-5);  //上次运行时间，默认为前推5小时
                 bool isTimeUp = false;   //向上搜索到达标志
