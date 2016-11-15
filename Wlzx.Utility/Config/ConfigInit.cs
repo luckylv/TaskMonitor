@@ -174,6 +174,7 @@ namespace Wlzx.Utility
         {
             bool Flag = false;
             Process proc = new Process();
+            string dosLine="";
             try
             {
                 proc.StartInfo.FileName = "cmd.exe";
@@ -183,8 +184,7 @@ namespace Wlzx.Utility
                 proc.StartInfo.RedirectStandardError = true;
                 proc.StartInfo.CreateNoWindow = true;
                 proc.Start();
-                string dosLine = @"net use \\" + remoteHost + @"\" + shareName + " /User:" + userName + " " + passWord + " /PERSISTENT:YES";
-                Console.WriteLine(dosLine);
+                dosLine = @"net use \\" + remoteHost + @"\" + shareName + " /User:" + userName + " " + passWord + " /PERSISTENT:YES";
                 proc.StandardInput.WriteLine(dosLine);
                 proc.StandardInput.WriteLine("exit");
                 while (!proc.HasExited)
@@ -201,6 +201,7 @@ namespace Wlzx.Utility
             }
             catch (Exception ex)
             {
+                LogHelper.WriteErrorAndC("映射" + dosLine + "错误", ex);
                 throw ex;
             }
             finally

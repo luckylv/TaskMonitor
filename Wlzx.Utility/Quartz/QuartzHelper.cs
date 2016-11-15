@@ -59,14 +59,13 @@ namespace Wlzx.Utility
 
                         scheduler = factory.GetScheduler();
                         scheduler.Clear();
-                        LogHelper.WriteLog("任务调度初始化成功！");
-                        Console.WriteLine("任务调度初始化成功！");
+                        LogHelper.WriteLogAndC("任务调度初始化成功！");
                     }
                 }
             }
             catch (Exception ex)
             {
-                LogHelper.WriteError("任务调度初始化失败！", ex);
+                LogHelper.WriteErrorAndC("任务调度初始化失败！", ex);
             }
         }
 
@@ -95,16 +94,16 @@ namespace Wlzx.Utility
                             }
                             catch(Exception e)
                             {
-                                LogHelper.WriteErrorAndC2(string.Format("任务“{0}”启动失败！",taskUtil.TaskName),e);
+                                LogHelper.WriteErrorAndC(string.Format("任务“{0}”启动失败！",taskUtil.TaskName),e);
                             }
                         }
                     }
-                    LogHelper.WriteLog("任务调度启动成功！");
+                    LogHelper.WriteLogAndC("任务调度启动成功！");
                 }
             }
             catch (Exception ex)
             {
-                LogHelper.WriteError("任务调度启动失败！",ex);
+                LogHelper.WriteErrorAndC("任务调度启动失败！",ex);
             }
         }
 
@@ -155,24 +154,29 @@ namespace Wlzx.Utility
                     trigger.Name = taskUtil.TaskID.ToString();
                     trigger.Description = taskUtil.TaskName;
                     //添加任务执行参数
-                    Console.WriteLine("正在启动" + taskUtil.TaskName);
+                    LogHelper.WriteLogAndC("正在启动" + taskUtil.TaskName);
                     job.JobDataMap.Add("TaskParam", taskUtil.TaskParam);
                     job.JobDataMap.Add("LastRunTime", taskUtil.LastRunTime);
                     job.JobDataMap.Add("TaskName", taskUtil.TaskName);
 
                     scheduler.ScheduleJob(job, trigger);
-                    LogHelper.WriteLog(string.Format("任务“{0}”启动成功,未来5次运行时间如下:", taskUtil.TaskName));
+                    //LogHelper.WriteLogAndC(string.Format("任务“{0}”启动成功！", taskUtil.TaskName));
+                    LogHelper.WriteLogAndC(string.Format("任务“{0}”启动成功,未来5次运行时间如下:", taskUtil.TaskName));
                     List<DateTime> list = GetTaskeFireTime(taskUtil.CronExpressionString, 5);
                     foreach (var time in list)
                     {
-                        LogHelper.WriteLog(time.ToString());
+                        LogHelper.WriteLogAndC(time.ToString());
                     }
 
                     //映射磁盘
                     MonitorParam Param = JsonConvert.DeserializeObject<MonitorParam>(taskUtil.TaskParam.Replace(@"\", @"\\"));//将参数\加入转义符后解析为\\
-                    if (!ConfigInit.Connect(Param.Url, Param.ShareName, Param.User, Param.Pw))
+                    if (Param != null)
                     {
-                        LogHelper.WriteErrorAndC("任务:" + taskUtil.TaskName + " 共享文件夹映射失败！");
+                        if (!ConfigInit.Connect(Param.Url, Param.ShareName, Param.User, Param.Pw))
+                        {
+                            LogHelper.WriteErrorAndC("任务:" + taskUtil.TaskName + " 共享文件夹映射失败！");
+                            LogHelper.TaskWriteLog("任务:" + taskUtil.TaskName + " 共享文件夹映射失败！", taskUtil.TaskName, "error");
+                        }
                     }
                 }
             }
@@ -193,7 +197,7 @@ namespace Wlzx.Utility
             {
                 //任务已经存在则暂停任务
                 scheduler.PauseJob(jk);
-                LogHelper.WriteLog(string.Format("任务“{0}”已经暂停", JobKey));
+                LogHelper.WriteLogAndC(string.Format("任务“{0}”已经暂停", JobKey));
             }
         }
 
@@ -208,7 +212,7 @@ namespace Wlzx.Utility
             {
                 //任务已经存在则恢复任务
                 scheduler.ResumeJob(jk);
-                LogHelper.WriteLog(string.Format("任务“{0}”恢复运行", JobKey));
+                LogHelper.WriteLogAndC(string.Format("任务“{0}”恢复运行", JobKey));
             }
         }
 
@@ -247,12 +251,12 @@ namespace Wlzx.Utility
                 if(!scheduler.IsShutdown)
                 {
                     scheduler.Shutdown(true);
-                    LogHelper.WriteLog("任务调度停止！");
+                    LogHelper.WriteLogAndC("任务调度停止！");
                 }
             }
             catch (Exception ex)
             {
-                LogHelper.WriteError("任务调度停止失败！", ex);
+                LogHelper.WriteErrorAndC("任务调度停止失败！", ex);
             }
         }
 

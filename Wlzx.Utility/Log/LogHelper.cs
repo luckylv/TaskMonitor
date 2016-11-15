@@ -60,7 +60,7 @@ namespace Wlzx.Utility
         }
 
         /// <summary>
-        /// Console输出的记录日志
+        /// Console窗口输出日志
         /// </summary>
         /// <param name="info"></param>
         public static void WriteLogC(string info)
@@ -82,8 +82,9 @@ namespace Wlzx.Utility
         //        logerror.Error(info, se);
         //    }
         //}
+
         /// <summary>
-        /// 错误日志
+        /// 错误日志2
         /// </summary>
         /// <param name="info"></param>
         /// <param name="se"></param>
@@ -127,7 +128,7 @@ namespace Wlzx.Utility
         /// </summary>
         /// <param name="info"></param>
         /// <param name="se"></param>
-        public static void WriteErrorAndC2(string info, Exception se)
+        public static void WriteErrorAndC(string info, Exception se)
         {
             if (logerror.IsErrorEnabled)
             {
@@ -181,6 +182,48 @@ namespace Wlzx.Utility
             {
                 loginfo.Info(info);
             }
+        }
+
+        ///// <summary>
+        ///// 单独文件的错误日志
+        ///// </summary>
+        ///// <param name="info"></param>
+        //public void WriteLogE(string info, Exception ex)
+        //{
+        //    ILog logerror = GetLogger(repositoryName, level);
+        //    if (logerror.IsErrorEnabled)
+        //    {
+        //        logerror.Error(info, ex);
+        //    }
+        //}
+
+        /// <summary>
+        /// 单独文件的普通文件记录日志
+        /// </summary>
+        /// <param name="info">日志内容</param>
+        /// <param name="repositoryName">任务名</param>
+        /// <param name="level">日志级别，如info,error</param>
+        public static void TaskWriteLog(string info, string repositoryName, string level = "info", Exception ex=null)
+        {
+            ILog loginfo = GetLogger(repositoryName, level);
+            //Console.WriteLine("要运行" + repositoryName + "  " + level + "   " + info + "  " + level +"  "+ String.Equals(level, Level.Info.ToString(), StringComparison.CurrentCultureIgnoreCase).ToString());
+
+            if (String.Equals(level, Level.Info.ToString(), StringComparison.CurrentCultureIgnoreCase))
+            {
+                if (loginfo.IsInfoEnabled)
+                {
+                    loginfo.Info(info);
+                }
+            }
+            else
+            {
+                if (loginfo.IsErrorEnabled)
+                {
+                    loginfo.Error(info, ex);
+                }
+            }
+
+            
         }
 
         /// <summary>
@@ -286,12 +329,12 @@ namespace Wlzx.Utility
             fileAppender.Name = "LogFileAppender";
             fileAppender.File = txtLogPath;
             fileAppender.AppendToFile = true;
-            fileAppender.MaxSizeRollBackups = 45;
+            fileAppender.MaxSizeRollBackups = 20;
             //fileAppender.MaximumFileSize = "1MB";
             fileAppender.RollingStyle = log4net.Appender.RollingFileAppender.RollingMode.Date;
 
             PatternLayout patternLayout = new PatternLayout();
-            patternLayout.ConversionPattern = "%-5p %d [%c] %m%n";
+            patternLayout.ConversionPattern = "%d{yyyy-MM-dd HH:mm:ss} %m%n";
             patternLayout.ActivateOptions();
             fileAppender.Layout = patternLayout;
 

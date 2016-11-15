@@ -82,7 +82,7 @@ namespace Wlzx.Utility
         }
 
         /// <summary>
-        /// 执行命令,并将结果转换为List<T>类型
+        /// 执行命令,并将结果转换为List类型
         /// </summary>
         /// <param name="strSQL">执行的SQL语句</param>
         /// <param name="param">参数</param>

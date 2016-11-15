@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Wlzx.Task.Utils;
+using Wlzx.Utility;
 
 namespace Wlzx.Task.TaskSet
 {
@@ -23,8 +23,10 @@ namespace Wlzx.Task.TaskSet
 
         public void Execute(IJobExecutionContext context)
         {
+            string TName = "";
             try
             {
+                TName = context.JobDetail.JobDataMap.Get("TaskName").ToString();
                 object objParam = context.JobDetail.JobDataMap.Get("TaskParam");
                 if(objParam!=null)
                 {
@@ -66,7 +68,8 @@ namespace Wlzx.Task.TaskSet
                             }
                             dictProcess[path] = processName;
 
-                            TaskLog.AutoRunLogInfo.WriteLogE("程序:【" + processName + "】已经运行,时间:" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "||进程数量:" + Process.GetProcessesByName(processName).Count());
+                            LogHelper.TaskWriteLog("程序:【" + processName + "】已经运行,时间:" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "||进程数量:" + Process.GetProcessesByName(processName).Count(), TName);
+                            //TaskLog.AutoRunLogInfo.WriteLogE("程序:【" + processName + "】已经运行,时间:" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "||进程数量:" + Process.GetProcessesByName(processName).Count());
                         }
                     }
                 }
@@ -74,7 +77,8 @@ namespace Wlzx.Task.TaskSet
             catch (Exception ex)
             {
                 JobExecutionException e2 = new JobExecutionException(ex);
-                TaskLog.AutoRunLogError.WriteLogE("自动运行程序的任务异常", ex);
+                //TaskLog.AutoRunLogError.WriteLogE("自动运行程序的任务异常", ex);
+                LogHelper.TaskWriteLog("自动运行程序的任务异常",TName,"error",ex);
                 //1.立即重新执行任务 
                 e2.RefireImmediately = true;
             }

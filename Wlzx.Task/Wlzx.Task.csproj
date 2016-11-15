@@ -63,9 +63,8 @@
     <Compile Include="TaskSet\AwsMonitorJob.cs" />
     <Compile Include="TaskSet\IpProxyJob.cs" />
     <Compile Include="TaskSet\SendMessageJob.cs" />
-    <Compile Include="TaskSet\ShMonitorJob.cs" />
+    <Compile Include="TaskSet\TaskMonitorJob.cs" />
     <Compile Include="TaskSet\TestJob.cs" />
-    <Compile Include="TaskSet\TrsfMonitorJob.cs" />
     <Compile Include="Utils\IpProxyGet.cs" />
     <Compile Include="Utils\TaskLog.cs" />
   </ItemGroup>
