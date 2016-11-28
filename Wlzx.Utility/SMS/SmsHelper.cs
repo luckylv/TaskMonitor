@@ -103,53 +103,57 @@ namespace Wlzx.Utility
         {
             try
             {
-                //添加短信接收人地址
-                string[] receivers = message.Receiver.Split(new char[] { ',' });
+                return SMSCode.Success;
 
-                foreach (string phone in receivers)
-                {
-                    if(YDZone.Contains(phone.Substring(0, 3))) //属于移动号码
-                    {
-                        if (YDSendOneMessage(phone, message.Content) == SMSCode.Success)
-                        {
-                            string newrev;
-                            if (message.Receiver.Contains(phone + ","))
-                            {
-                                newrev = message.Receiver.Replace(phone + ",", "");
-                            }
-                            else
-                            {
-                                newrev = message.Receiver.Replace(phone, "");
-                            }
-                             message.Receiver = newrev;
-                        }
-                    }
-                    else
-                    {
-                        if (LTSendOneMessage(phone, message.Content) == SMSCode.Success)
-                        {
-                            string newrev;
-                            if (message.Receiver.Contains(phone + ","))
-                            {
-                                newrev = message.Receiver.Replace(phone + ",", "");
-                            }
-                            else
-                            {
-                                newrev = message.Receiver.Replace(phone, "");
-                            }
-                            message.Receiver = newrev;
-                        }
-                    } 
-                }
+                //#region 占时注释，测试用
+                ////添加短信接收人地址
+                //string[] receivers = message.Receiver.Split(new char[] { ',' });
 
-                if (string.IsNullOrWhiteSpace(message.Receiver.Trim()))  //如果名单已清空，则表示全部发送成功
-                {
-                    return SMSCode.Success;
-                }
-                else                    //名单非空则表示有短信未发出
-                {
-                    return SMSCode.Fail;
-                }
+                //foreach (string phone in receivers)
+                //{
+                //    if(YDZone.Contains(phone.Substring(0, 3))) //属于移动号码
+                //    {
+                //        if (YDSendOneMessage(phone, message.Content) == SMSCode.Success)
+                //        {
+                //            string newrev;
+                //            if (message.Receiver.Contains(phone + ","))   //该号码不在末尾
+                //            {
+                //                newrev = message.Receiver.Replace(phone + ",", "");
+                //            }
+                //            else
+                //            {
+                //                newrev = message.Receiver.Replace(phone, "");//该号码在末尾
+                //            }
+                //             message.Receiver = newrev;
+                //        }
+                //    }
+                //    else
+                //    {
+                //        if (LTSendOneMessage(phone, message.Content) == SMSCode.Success)
+                //        {
+                //            string newrev;
+                //            if (message.Receiver.Contains(phone + ","))
+                //            {
+                //                newrev = message.Receiver.Replace(phone + ",", "");
+                //            }
+                //            else
+                //            {
+                //                newrev = message.Receiver.Replace(phone, "");
+                //            }
+                //            message.Receiver = newrev;
+                //        }
+                //    } 
+                //}
+
+                //if (string.IsNullOrWhiteSpace(message.Receiver.Trim()))  //如果名单已清空，则表示全部发送成功
+                //{
+                //    return SMSCode.Success;
+                //}
+                //else                    //名单非空则表示有短信未发出
+                //{
+                //    return SMSCode.Fail;
+                //}
+                //#endregion
 
                 #region "老代码"
                 ////创建Httphelper对象
@@ -184,6 +188,75 @@ namespace Wlzx.Utility
         }
 
         /// <summary>
+        /// 移动发送单条短信
+        /// </summary>
+        /// <param name="oneReceiver">短信接收人手机号码</param>
+        /// <param name="content">短信内容</param>
+        /// <returns>发送状态</returns>
+        public static SMSCode YDSendOneMessage(string oneReceiver, string content)
+        {
+            try
+            {
+                //插入一条发送记录
+                DbHelper.ExecuteNonQuery(SysConfig.YDsmsConnect, YDinsertSQL, new { phoneNumber = oneReceiver, smsContent = content });
+                //取出该条记录ID号
+                string smsId = DbHelper.ExecuteScalar<string>(SysConfig.YDsmsConnect, YDqueryIdSQL, null);
+                //检查短信发送状态 
+                string YDSMSState = DbHelper.ExecuteScalar<string>(SysConfig.YDsmsConnect, YDqueryStatus, new { smsId = smsId });
+
+                //若无状态则每隔1秒查一次状态，共5次
+                int checkTime = 0;
+                while (checkTime < 5 && string.Equals(YDSMSState, "0"))
+                {
+                    Thread.Sleep(1000);
+                    //取出该条状态
+                    YDSMSState = DbHelper.ExecuteScalar<string>(SysConfig.YDsmsConnect, YDqueryStatus, new { smsId = smsId });
+                    if (YDSMSState == null)
+                    {
+                        string logstr = "发送短信错误，错误原因：第" + checkTime.ToString() + "次无法检索到短信发送状态，请检查数据库连接";
+                        LogHelper.TaskWriteLog(logstr, "发送信息任务", "error");
+                        LogHelper.WriteErrorAndC(logstr);
+                        return SMSCode.Exception;
+                    }
+                }
+
+                //5次内检索到状态
+                if (checkTime < 5)
+                {   //状态为0则发送成功
+                    //状态为1则发送成功
+                    if (string.Equals(YDSMSState, "1"))
+                    {
+                        string logstr = "成功发送短信至" + oneReceiver + "，内容:" + content;
+                        LogHelper.TaskWriteLog(logstr, "发送信息任务");
+                        LogHelper.WriteLogAndC(logstr);
+                        return SMSCode.Success;
+                    }
+                    else//状态为非1则发送失败
+                    {
+                        string logstr = "发送短信失败，未到达" + oneReceiver + "，内容:" + content + "，失败原因：获取短信状态为非1";
+                        LogHelper.TaskWriteLog(logstr, "发送信息任务", "error");
+                        LogHelper.WriteErrorAndC(logstr);
+                        return SMSCode.Fail;
+                    }
+                }
+                else//5次内还未检索到状态
+                {
+                    string logstr = "发送短信失败，未到达" + oneReceiver + "，内容:" + content + "，失败原因：5次检索未取得短信发送状态";
+                    LogHelper.TaskWriteLog(logstr, "发送信息任务", "error");
+                    LogHelper.WriteErrorAndC(logstr);
+                    return SMSCode.Fail;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                LogHelper.TaskWriteLog("短信发送出错" + ex.Message, "发送信息任务", "error");
+                LogHelper.WriteErrorAndC("短信发送出错", ex);
+                return SMSCode.Exception;
+            }
+        }
+
+        /// <summary>
         /// 联通发送单条短信
         /// </summary>
         /// <param name="oneReceiver">短信接收人手机号码</param>
@@ -209,8 +282,8 @@ namespace Wlzx.Utility
                     if (current == null)
                     {
                         string logstr = "发送短信错误，错误原因：第" + checkTime+1.ToString() + "次无法检索到短信发送状态，请检查数据库连接";
-                        LogHelper.WriteLogC(logstr);
-                        LogHelper.WriteError(logstr);
+                        LogHelper.TaskWriteLog(logstr, "发送信息任务","error");
+                        LogHelper.WriteErrorAndC(logstr);
                         return SMSCode.Exception;
                     }
                 }
@@ -220,91 +293,36 @@ namespace Wlzx.Utility
                     if (Convert.ToInt32(current.resultCode) == 0)
                     {
                         string logstr = "成功发送短信至" + current.phoneNumber + "，内容:" + current.smsContent;
-                        LogHelper.WriteLogC(logstr);
-                        LogHelper.WriteLog(logstr);
+                        LogHelper.TaskWriteLog(logstr, "发送信息任务");
+                        LogHelper.WriteLogAndC(logstr);
                         return SMSCode.Success;
                     }
                     else//状态为非0则发送失败
                     {
                         string logstr = "发送短信失败，未到达" + current.phoneNumber + "，内容:" + current.smsContent + "，失败原因：" + current.resultDesc;
-                        LogHelper.WriteLogC(logstr);
-                        LogHelper.WriteError(logstr);
+                        LogHelper.TaskWriteLog(logstr, "发送信息任务", "error");
+                        LogHelper.WriteErrorAndC(logstr);
                         return SMSCode.Fail;
                     }
                 }
                 else//5次内还未检索到状态
                 {
                     string logstr = "发送短信失败，未到达" + current.phoneNumber + "，内容:" + current.smsContent + "，失败原因：5次检索未取得短信发送状态";
-                    LogHelper.WriteLogC(logstr);
-                    LogHelper.WriteError(logstr);
+                    LogHelper.TaskWriteLog(logstr, "发送信息任务", "error");
+                    LogHelper.WriteErrorAndC(logstr);
                     return SMSCode.Fail;
                 }
 
             }
             catch (Exception ex)
             {
-                LogHelper.WriteError("短信发送出错", ex);
-                LogHelper.WriteLogC("短信发送出错" + ex.Message);
+                LogHelper.TaskWriteLog("短信发送出错" + ex.Message, "发送信息任务", "error");
+                LogHelper.WriteErrorAndC("短信发送出错", ex);
                 return SMSCode.Exception;
             }
         }
 
-        /// <summary>
-        /// 移动发送单条短信
-        /// </summary>
-        /// <param name="oneReceiver">短信接收人手机号码</param>
-        /// <param name="content">短信内容</param>
-        /// <returns>发送状态</returns>
-        public static SMSCode YDSendOneMessage(string oneReceiver, string content)
-        {
-            try
-            {
-                //插入一条发送记录
-                DbHelper.ExecuteNonQuery(SysConfig.YDsmsConnect, YDinsertSQL, new { phoneNumber = oneReceiver, smsContent = content });
-                //取出该条记录ID号
-                string smsId = DbHelper.ExecuteScalar<string>(SysConfig.YDsmsConnect, YDqueryIdSQL, null);
-                //检查短信发送状态 
-                string YDSMSState = DbHelper.ExecuteScalar<string>(SysConfig.YDsmsConnect, YDqueryStatus, new { smsId = smsId});
-
-                //若无状态则每隔1秒查一次状态，共5次
-                int checkTime = 0;
-                while (checkTime < 5 && string.Equals(YDSMSState,"0"))
-                {
-                    Thread.Sleep(1000);
-                    //取出该条状态
-                    YDSMSState = DbHelper.ExecuteScalar<string>(SysConfig.YDsmsConnect, YDqueryStatus, new { smsId = smsId });
-                    if (YDSMSState == null)
-                    {
-                        string logstr = "发送短信错误，错误原因：第" + checkTime.ToString() + "次无法检索到短信发送状态，请检查数据库连接";
-                        LogHelper.WriteLogC(logstr);
-                        LogHelper.WriteError(logstr);
-                        return SMSCode.Exception;
-                    }
-                }
-
-                //状态为0则发送成功
-                if (string.Equals(YDSMSState, "1"))
-                {
-                    string logstr = "成功发送短信至" + oneReceiver + "，内容:" + content;
-                    LogHelper.WriteLogC(logstr);
-                    LogHelper.WriteLog(logstr);
-                    return SMSCode.Success;
-                }
-                else//状态为非1则发送失败
-                {
-                    string logstr = "发送短信失败，未到达" + oneReceiver + "，内容:" + content + "，失败原因：获取短信状态为非1";
-                    LogHelper.WriteLogC(logstr);
-                    LogHelper.WriteError(logstr);
-                    return SMSCode.Fail;
-                }
-            }
-            catch (Exception ex)
-            {
-                LogHelper.WriteError("短信发送出错", ex);
-                LogHelper.WriteLogC("短信发送出错" + ex.Message);
-                return SMSCode.Exception;
-            }
-        }
+        
     }
 
 

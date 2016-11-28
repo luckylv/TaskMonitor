@@ -24,10 +24,11 @@ namespace Wlzx.Task.TaskSet
             {
                 string sqlstr = @"SELECT [TaskID],[TaskName],[TaskParam],[CronExpressionString],[Assembly],[Class],[Status],[CreatedOn]
                                   ,[ModifyOn],[RecentRunTime],[LastRunTime],[CronRemark],[Remark]
-                            FROM [TaskManager].[dbo].[p_Task]";
+                            FROM [dbo].[p_Task]";
                 DataTable dt = SQLHelper.FillDataTable(sqlstr);
                 string ResumeStr = "";//报警站恢复字符串
                 Dictionary<string, Dictionary<string, string>> warningStrs = new Dictionary<string, Dictionary<string, string>>();   //任务报警信息合集
+                Dictionary<string, int> stnums = new Dictionary<string, int>();   //任务报警信息合集
 
                 #region 查找每个任务的报警信息
                 foreach (DataRow row in dt.Rows)
@@ -95,6 +96,12 @@ namespace Wlzx.Task.TaskSet
                             }
                             else
                             {
+                                #region 计算每类监控的台站数
+                                string stationNumQuery = @"SELECT COUNT(*) FROM " + Param.DBTable ;
+                                stnums.Add(TaskName, SQLHelper.ExecuteScalar<int>(stationNumQuery));
+                                //LogHelper.WriteLogAndC("任务名："+TaskName+"  查数sql："+stationNumQuery+"个数："+ddd);
+                                #endregion
+
                                 #region 对已恢复的数据还原报警开关
                                 //判断任务参数中的自动恢复是否为true
 
@@ -106,10 +113,22 @@ namespace Wlzx.Task.TaskSet
                                     SQLHelper.ExecuteNonQuery(updateResumeState);
 
                                     ResumeStr = TaskName.Substring(0, TaskName.IndexOf("监控"));
+                                    int l = 0;
                                     foreach (DataRow rowResumeMiss in dtResumeMiss.Rows)
                                     {
-                                        ResumeStr += rowResumeMiss["Station"].ToString().Trim() + ",";
-                                            //ResumeStr += rowResumeMiss["Station"].ToString().Trim()+"|"+rowResumeMiss["ValidTime"].ToString().Trim();
+                                        
+                                        if (l>=3)
+                                        {
+                                            ResumeStr += "等";
+                                            break;
+                                        }
+                                        else if(l!=0)
+                                        {
+                                            ResumeStr += ",";
+                                        }
+                                        ResumeStr += rowResumeMiss["Station"].ToString().Trim();
+                                        l++;
+                                        //ResumeStr += rowResumeMiss["Station"].ToString().Trim()+"|"+rowResumeMiss["ValidTime"].ToString().Trim();
                                     }
                                     ResumeStr = ResumeStr.Substring(0, ResumeStr.LastIndexOf(',')) + "恢复传输;";
                                     LogHelper.WriteLogAndC(ResumeStr);
@@ -140,14 +159,15 @@ namespace Wlzx.Task.TaskSet
                                     {
                                         strMiss += kvpsmall.Key.Trim() + "|" + kvpsmall.Value.Trim();
                                     }
-                                    warningStrs.Add(TaskName, TaskwarningStrs);
                                     LogHelper.WriteLogAndC(TaskName + "发现报警信息" + calstation.ToString() + "条:" + strMiss);
                                     LogHelper.TaskWriteLog(TaskName + "报警" + calstation.ToString() + "条:" + strMiss, "报警信息");
+
+                                    warningStrs.Add(TaskName, TaskwarningStrs);
                                     //发短信?
                                 }
                                 else
                                 {
-
+                                    warningStrs.Add(TaskName, new Dictionary<string, string>());  //未检测到缺战，插入空
                                 }
                             }   
                         }
@@ -155,22 +175,23 @@ namespace Wlzx.Task.TaskSet
                 }
                 #endregion
 
-                
-                #region 将DIC的KEY转为一维数组处理
+
+                #region 将相同类型的报警进行合并
+                //将DIC的KEY转为一维数组处理，
                 List<string> warningStrsList = new List<string>();
                 //遍历报警信息
                 foreach (string onekey in warningStrs.Keys)
                 {
                     warningStrsList.Add(onekey);
-                    LogHelper.WriteLogAndC("加入了搜索任务:" + onekey);
+                    //LogHelper.WriteLogAndC("加入了搜索任务:" + onekey);
                 }
                 
-
+                //将相同类型的监控进行合并
                 for (int i = 0; i < warningStrsList.Count; i++)
                 {
                     for (int j = i+1; j < warningStrsList.Count; j++)
                     {
-                        LogHelper.WriteLogAndC("搜索任务为:" + warningStrsList[j].ToString());
+                        //LogHelper.WriteLogAndC("搜索任务为:" + warningStrsList[j].ToString());
                         string onesub=warningStrsList[i].Substring(0, warningStrsList[i].IndexOf("监控"));
                         string othersub=warningStrsList[j].Substring(0, warningStrsList[j].IndexOf("监控"));
 
@@ -180,20 +201,21 @@ namespace Wlzx.Task.TaskSet
                             foreach (string onekey in new List<string>(warningStrs[warningStrsList[i]].Keys)) 
                             {
                                 //if (key == 1) ht.Remove(key);
-                                LogHelper.WriteLogAndC("开始进入J行遍历，搜索台站为:" + onekey);
+                                //LogHelper.WriteLogAndC("开始进入J行遍历，搜索台站为:" + onekey);
 
                                 if (!warningStrs[warningStrsList[j]].ContainsKey(onekey))
                                 {
-                                    LogHelper.WriteLogAndC(warningStrsList[j] + "不包含报警单站:" + onekey + ",I中删除了单站:" + onekey);
+                                    //LogHelper.WriteLogAndC(warningStrsList[j] + "不包含报警单站:" + onekey + ",I中删除了单站:" + onekey);
                                     warningStrs[warningStrsList[i]].Remove(onekey);//有别的站不包含（已到报），则删除此站
                                 }
                                 else
                                 {
-                                    LogHelper.WriteLogAndC(warningStrsList[j] + "包含报警单站:" + onekey);
+                                    //LogHelper.WriteLogAndC(warningStrsList[j] + "包含报警单站:" + onekey);
                                 }
                             }
 
-                            LogHelper.WriteLogAndC("删除了整行任务:" + warningStrsList[j].ToString());
+                            //LogHelper.WriteLogAndC("删除了整行任务:" + warningStrsList[j].ToString());
+                            LogHelper.WriteLogAndC("完成了" + warningStrsList[i].ToString()+"和"+ warningStrsList[j].ToString()+"的合并检查");
                             warningStrs.Remove(warningStrsList[j]); //warningStrs遍历完后把J行删除
                             warningStrsList.RemoveAt(j);    //warningStrsList遍历完后把J行删除
                             j--;//回到当前行继续遍历
@@ -203,27 +225,101 @@ namespace Wlzx.Task.TaskSet
                 #endregion
 
                 string warnWord = "";
-
+                
+                //加入台站恢复信息
                 warnWord += ResumeStr;
 
                 foreach (KeyValuePair<string, Dictionary<string, string>> kvp in warningStrs)
                 {
-                    //Console.WriteLine("Key = {0}, Value = {1}", kvp.Key, kvp.Value);
+                    if (kvp.Value.Count == 0)  //只检查非零的报警
+                        continue;
 
-                    warnWord += kvp.Key.Substring(0, kvp.Key.IndexOf("监控")) + "共" + kvp.Value.Count.ToString() + "条报警：" ;
+                    //Console.WriteLine("Key = {0}, Value = {1}", kvp.Key, kvp.Value);
+                    string onew = "";
+                    onew += kvp.Key.Substring(0, kvp.Key.IndexOf("监控")) + "共" + kvp.Value.Count.ToString() + "条报警：";
+                    #region 具体的报警台站信息
+                    int ti = 0;
                     foreach (KeyValuePair<string, string> kvpsmall in kvp.Value)
                     {
-                        warnWord += kvpsmall.Key.Trim() + "|" + kvpsmall.Value.Trim();
+                        onew += kvpsmall.Key.Trim() + "|" + kvpsmall.Value.Trim();
+                        ti++;
+                        if (ti >= 3)  //如果报警站数超过3个则省略
+                        {
+                            onew += "等";
+                            break;
+                        }
+                        else
+                        {
+                            if (ti != kvp.Value.Count)  //末数不加","
+                                onew += ",";
+                        }
+
+                    }
+                    #endregion
+
+                    #region 检查该类信息已报警次数
+
+                    DateTime oneDayStart = TaskHelper.GetDayStart();
+                    string qSQL = "SELECT COUNT(*) ct FROM dbo.p_MessageHistory where charindex(@ContentCmpl,Content)>0 and SendOn>@SendOn group by Receiver order by ct desc";
+                    int warnnum=SQLHelper.ExecuteScalar<int>(qSQL, new { ContentCmpl = onew, SendOn = oneDayStart });
+
+
+                    if (warnnum < SysConfig.SmsMax)//未超过3次报警
+                    {
+                        if(SysConfig.PerWarn)   //使用夜间到达率报警
+                        {
+                            if(TaskHelper.TimeInSpan(DateTime.Now,SysConfig.PerWarnStart,SysConfig.PerWarnEnd)) //在夜间
+                            {
+                                double PerReach = (1.0-(double)kvp.Value.Count / (double)stnums[kvp.Key])*100;  //计算到达率
+                                if(PerReach>SysConfig.PerValue)  //高于阈值
+                                {
+
+                                }
+                                else
+                                {
+                                    warnWord += kvp.Key.Substring(0, kvp.Key.IndexOf("监控")) + "报警,到达率为" + PerReach.ToString("f2 ");
+                                    LogHelper.WriteLogAndC(kvp.Key.Substring(0, kvp.Key.IndexOf("监控")) + "报警,到达率为" + PerReach.ToString("f2 "));
+                                    LogHelper.TaskWriteLog(kvp.Key.Substring(0, kvp.Key.IndexOf("监控")) + "报警,到达率为" + PerReach.ToString("f2 "), "报警信息");
+                                }
+
+                            }
+                            else //在白天
+                            {
+                                warnWord += onew + ";";
+                                LogHelper.WriteLogAndC("添加了报警" + onew + "，当前已报" + warnnum + "次，最大" + SysConfig.SmsMax);
+                                LogHelper.TaskWriteLog("添加了报警" + onew + "，当前已报" + warnnum + "次，最大" + SysConfig.SmsMax, "报警信息");
+                            }
+                        }
+                        else                   //不使用到达率
+                        {
+                            warnWord += onew + ";";
+                            LogHelper.WriteLogAndC("添加了报警" + onew + "，当前已报" + warnnum + "次，最大" + SysConfig.SmsMax);
+                            LogHelper.TaskWriteLog("添加了报警" + onew + "，当前已报" + warnnum + "次，最大" + SysConfig.SmsMax, "报警信息");
+                        }
+
+
+                        
+                    }
+                    else//超过3次后是否需要每小时报警
+                    {
+                        LogHelper.WriteLogAndC(onew + "在当天已被报警" + warnnum.ToString() + "次");
+                        LogHelper.TaskWriteLog(onew + "在当天已被报警" + warnnum.ToString() + "次", "报警信息");
+
+                        
+
                     }
 
-                    warnWord += ";";  
+                    #endregion
                 }
+                if (warnWord.EndsWith(";"))   //去除最后一个";"
+                    warnWord=warnWord.Remove(warnWord.Length - 1);
 
 
                 if (!String.IsNullOrWhiteSpace(warnWord))
                 {
-                    LogHelper.WriteLogAndC("本次整合报警信息" + warnWord);
-                    LogHelper.TaskWriteLog("本次整合报警信息" + warnWord, "报警信息");
+                    LogHelper.WriteLogAndC("本次整合" + warnWord);
+                    LogHelper.TaskWriteLog("本次整合" + warnWord, "报警信息");
+                    MessageHelper.AddMessage(SysConfig.SmsTels.Trim(), "本次整合" + warnWord, "报警标题", "监控轮询任务", Guid.Empty);
                 }
             }
             catch (Exception ex)

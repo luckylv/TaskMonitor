@@ -334,5 +334,63 @@ namespace Wlzx.Utility
             }
             return result;
         }
+
+        /// <summary>
+        /// 获取当天检测的起始时间
+        /// </summary>
+        /// <returns>起始时间</returns>
+        public static DateTime GetDayStart()
+        {
+            DateTime oneDayStart = DateTime.Now;//初始化检索时间起点
+            //当时间为0点到9点之间，获取昨天9点的时间
+            if (DateTime.Now >= DateTime.Parse(DateTime.Now.ToShortDateString() + " 0:00:00") && DateTime.Now <= DateTime.Parse(DateTime.Now.ToShortDateString() + " 9:00:00"))
+            {
+                oneDayStart = DateTime.Parse(DateTime.Now.AddDays(-1).ToShortDateString() + " 9:00:00");
+            }
+            else//当时间为9点到24点之间，获取当天9点的时间
+            {
+                oneDayStart = DateTime.Parse(DateTime.Now.ToShortDateString() + " 9:00:00");
+            }
+
+            return oneDayStart;
+        }
+
+        /// <summary>
+        /// 判断给定时间是否在给定时间区间内
+        /// </summary>
+        /// <param name="dt">给定一个时间</param>
+        /// <param name="startTime">区间开始，格式HH:mm</param>
+        /// <param name="endTime">区间结束，格式HH:mm</param>
+        /// <returns>下次运行时间</returns>
+        public static bool TimeInSpan(DateTime dt,string startTime,string endTime)
+        {
+            try
+            {
+                TimeSpan span = dt.TimeOfDay;
+                TimeSpan begin = DateTime.Parse(DateTime.Now.ToShortDateString() + " " + startTime + ":00").TimeOfDay;
+                TimeSpan end = DateTime.Parse(DateTime.Now.ToShortDateString() + " " + endTime + ":00").TimeOfDay;
+
+                if (begin < end)  //未跨天
+                {
+                    if ((span > begin) && (span < end))
+                    {
+                        return true;
+                    }
+                }
+                else //跨天
+                {
+                    if ((span > begin) || (span < end))
+                    {
+                        return false;
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+
+            return false;
+        }
     }
 }

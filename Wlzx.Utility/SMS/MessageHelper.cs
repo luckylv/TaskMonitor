@@ -74,6 +74,8 @@ namespace Wlzx.Utility
             while (!isSuccess && count < 3)
             {
                 //如果第一次没有发送成功再重新发送一遍
+                LogHelper.WriteErrorAndC("短信第" + count + "次没有发送成功");
+                LogHelper.TaskWriteLog("短信第" + count + "次没有发送成功", "发送信息任务");
                 count++;
                 isSuccess = SendMessage(message, count);
             }
@@ -96,6 +98,16 @@ namespace Wlzx.Utility
         }
 
         /// <summary>
+        /// 将消息直接清除
+        /// </summary>
+        /// <param name="MessageGuid">消息GUID</param>
+        public static void RemoveMessageWithoutHis(Guid MessageGuid)
+        {
+            string strSQL = @"DELETE FROM dbo.p_Message WHERE MessageGuid=@MessageGuid;";
+            SQLHelper.ExecuteNonQuery(strSQL, new { MessageGuid = MessageGuid});
+        }
+
+        /// <summary>
         /// 通过消息GUID获取消息数据
         /// </summary>
         /// <param name="MessageGuid">消息GUID</param>
@@ -107,7 +119,7 @@ namespace Wlzx.Utility
     }
 
     /// <summary>
-    /// 消息
+    /// 待发送消息
     /// </summary>
     public class Message
     {
@@ -140,6 +152,63 @@ namespace Wlzx.Utility
         /// 消息创建日期
         /// </summary>
         public DateTime CreatedOn { get; set; }
+
+        /// <summary>
+        /// 消息来源类型
+        /// </summary>
+        public string FromType { get; set; }
+
+        /// <summary>
+        /// 消息来源GUID
+        /// </summary>
+        public Guid FkGUID { get; set; }
+    }
+
+
+    /// <summary>
+    /// 已发送消息
+    /// </summary>
+    public class MessageHistory
+    {
+        /// <summary>
+        /// 消息GUID
+        /// </summary>
+        public Guid MessageGuid { get; set; }
+
+        /// <summary>
+        /// 消息接收人
+        /// </summary>
+        public string Receiver { get; set; }
+
+        /// <summary>
+        /// 消息类型
+        /// </summary>
+        public MessageType Type { get; set; }
+
+        /// <summary>
+        /// 消息内容
+        /// </summary>
+        public string Content { get; set; }
+
+        /// <summary>
+        /// 邮件主题
+        /// </summary>
+        public string Subject { get; set; }
+
+        /// <summary>
+        /// 消息创建日期
+        /// </summary>
+        public DateTime CreatedOn { get; set; }
+
+        /// <summary>
+        /// 消息发送日期
+        /// </summary>
+        public DateTime SendOn { get; set; }
+
+        /// <summary>
+        /// 消息发送标记
+        /// </summary>
+        public string Remark { get; set; }
 
         /// <summary>
         /// 消息来源类型

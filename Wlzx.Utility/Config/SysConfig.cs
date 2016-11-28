@@ -28,6 +28,12 @@ namespace Wlzx.Utility
         public static string SqlConnect { get; set; }
 
         /// <summary>
+        /// 邮件信息配置
+        /// </summary>
+        [PathMap(Key = "MailInfo")]
+        public static string MailInfo { get; set; }
+
+        /// <summary>
         /// 联通SMS数据库连接字符串信息
         /// </summary>
         [PathMap(Key = "LTsmsConnect")]
@@ -40,10 +46,47 @@ namespace Wlzx.Utility
         public static string YDsmsConnect { get; set; }
 
         /// <summary>
-        /// 邮件信息配置
+        /// 同一报警发送间隔分钟
         /// </summary>
-        [PathMap(Key="MailInfo")]
-        public static string MailInfo { get; set; }
+        [PathMap(Key = "SmsSpan")]
+        public static int SmsSpan { get; set; }
+
+        /// <summary>
+        /// 同一报警每日最大发送次数
+        /// </summary>
+        [PathMap(Key = "SmsMax")]
+        public static int SmsMax { get; set; }
+
+        /// <summary>
+        /// 报警号码，以，分隔
+        /// </summary>
+        [PathMap(Key = "SmsTels")]
+        public static string SmsTels { get; set; }
+
+        /// <summary>
+        /// 到达率报警启动开关
+        /// </summary>
+        [PathMap(Key = "PerWarn")]
+        public static bool PerWarn { get; set; }
+
+        /// <summary>
+        /// 到达率阈值
+        /// </summary>
+        [PathMap(Key = "PerValue")]
+        public static int PerValue { get; set; }
+
+        /// <summary>
+        /// 到达率报警开始时间HH:mm
+        /// </summary>
+        [PathMap(Key = "PerWarnStart")]
+        public static string PerWarnStart { get; set; }
+
+        /// <summary>
+        /// 到达率报警结束时间HH:mm
+        /// </summary>
+        [PathMap(Key = "PerWarnEnd")]
+        public static string PerWarnEnd { get; set; }
+        
         /// <summary>
         /// 邮件信息配置
         /// </summary>

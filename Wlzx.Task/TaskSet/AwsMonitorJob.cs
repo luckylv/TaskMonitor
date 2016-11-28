@@ -115,8 +115,18 @@ namespace Wlzx.Task.TaskSet
                                 }
                                 /////////////////////////////////////////////////////////////////
 
-                                //更新数据
+                                
+                                //更新服务器信息
+                                string UpdateServerSQL = @"UPDATE  " + Param.DBTable + " SET Server=@Server WHERE Station=@Station and Server<>@Server";
+                                int svrChgNum = SQLHelper.ExecuteNonQuery(UpdateServerSQL, new { Server = Param.Url, Station = result["station"].ToString() });
+                                if(svrChgNum>0)
+                                {
+                                    LogHelper.TaskWriteLog("更改了" + result["station"].ToString()+"的服务器信息", TName);
+                                    LogHelper.WriteLogAndC("更改了" + result["station"].ToString() + "的服务器信息");
+                                }
 
+
+                                //更新数据
                                 //string stationQuery = @"SELECT [Station],[Server],[ValidTime],[ValidNumber],[IsWarn] FROM " + Param.DBTable + " where Station=@Station and Server=@Server";
                                 string stationQuery = @"SELECT [ValidTime] FROM " + Param.DBTable + " where Station=@Station and Server=@Server";
 

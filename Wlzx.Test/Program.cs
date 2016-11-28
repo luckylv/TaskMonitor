@@ -12,6 +12,8 @@ namespace Wlzx.Test
             ConfigInit.InitConfig();
 
             //SmsHelper.SendMessage("13958006233", "测试一下");
+            //MessageHelper.AddMessage("13958006233", "测试内容3", "测试标题", "主进程调试", Guid.Empty);
+
             QuartzHelper.InitScheduler();
             QuartzHelper.StartScheduler();
             
