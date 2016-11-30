@@ -372,14 +372,22 @@ namespace Wlzx.Utility
 
                 if (begin < end)  //未跨天
                 {
-                    if ((span > begin) && (span < end))
+                    if ((span >= begin) && (span <= end))
                     {
                         return true;
+                    }
+                    else
+                    {
+                        return false;
                     }
                 }
                 else //跨天
                 {
-                    if ((span > begin) || (span < end))
+                    if ((span >= begin) || (span <= end))
+                    {
+                        return true;
+                    }
+                    else
                     {
                         return false;
                     }
@@ -389,8 +397,6 @@ namespace Wlzx.Utility
             {
                 throw;
             }
-
-            return false;
         }
     }
 }

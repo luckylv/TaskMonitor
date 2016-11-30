@@ -73,7 +73,7 @@ namespace Wlzx.Utility
         /// 到达率阈值
         /// </summary>
         [PathMap(Key = "PerValue")]
-        public static int PerValue { get; set; }
+        public static double PerValue { get; set; }
 
         /// <summary>
         /// 到达率报警开始时间HH:mm

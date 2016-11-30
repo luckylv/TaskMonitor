@@ -103,57 +103,57 @@ namespace Wlzx.Utility
         {
             try
             {
-                return SMSCode.Success;
+                //return SMSCode.Success;
 
-                //#region 占时注释，测试用
-                ////添加短信接收人地址
-                //string[] receivers = message.Receiver.Split(new char[] { ',' });
+                #region 占时注释，测试用
+                //添加短信接收人地址
+                string[] receivers = message.Receiver.Split(new char[] { ',' });
 
-                //foreach (string phone in receivers)
-                //{
-                //    if(YDZone.Contains(phone.Substring(0, 3))) //属于移动号码
-                //    {
-                //        if (YDSendOneMessage(phone, message.Content) == SMSCode.Success)
-                //        {
-                //            string newrev;
-                //            if (message.Receiver.Contains(phone + ","))   //该号码不在末尾
-                //            {
-                //                newrev = message.Receiver.Replace(phone + ",", "");
-                //            }
-                //            else
-                //            {
-                //                newrev = message.Receiver.Replace(phone, "");//该号码在末尾
-                //            }
-                //             message.Receiver = newrev;
-                //        }
-                //    }
-                //    else
-                //    {
-                //        if (LTSendOneMessage(phone, message.Content) == SMSCode.Success)
-                //        {
-                //            string newrev;
-                //            if (message.Receiver.Contains(phone + ","))
-                //            {
-                //                newrev = message.Receiver.Replace(phone + ",", "");
-                //            }
-                //            else
-                //            {
-                //                newrev = message.Receiver.Replace(phone, "");
-                //            }
-                //            message.Receiver = newrev;
-                //        }
-                //    } 
-                //}
+                foreach (string phone in receivers)
+                {
+                    if (YDZone.Contains(phone.Substring(0, 3))) //属于移动号码
+                    {
+                        if (YDSendOneMessage(phone, message.Content) == SMSCode.Success)
+                        {
+                            string newrev;
+                            if (message.Receiver.Contains(phone + ","))   //该号码不在末尾
+                            {
+                                newrev = message.Receiver.Replace(phone + ",", "");
+                            }
+                            else
+                            {
+                                newrev = message.Receiver.Replace(phone, "");//该号码在末尾
+                            }
+                            message.Receiver = newrev;
+                        }
+                    }
+                    else
+                    {
+                        if (LTSendOneMessage(phone, message.Content) == SMSCode.Success)
+                        {
+                            string newrev;
+                            if (message.Receiver.Contains(phone + ","))
+                            {
+                                newrev = message.Receiver.Replace(phone + ",", "");
+                            }
+                            else
+                            {
+                                newrev = message.Receiver.Replace(phone, "");
+                            }
+                            message.Receiver = newrev;
+                        }
+                    }
+                }
 
-                //if (string.IsNullOrWhiteSpace(message.Receiver.Trim()))  //如果名单已清空，则表示全部发送成功
-                //{
-                //    return SMSCode.Success;
-                //}
-                //else                    //名单非空则表示有短信未发出
-                //{
-                //    return SMSCode.Fail;
-                //}
-                //#endregion
+                if (string.IsNullOrWhiteSpace(message.Receiver.Trim()))  //如果名单已清空，则表示全部发送成功
+                {
+                    return SMSCode.Success;
+                }
+                else                    //名单非空则表示有短信未发出
+                {
+                    return SMSCode.Fail;
+                }
+                #endregion
 
                 #region "老代码"
                 ////创建Httphelper对象

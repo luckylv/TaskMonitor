@@ -101,10 +101,10 @@ namespace Wlzx.Utility
         /// 将消息直接清除
         /// </summary>
         /// <param name="MessageGuid">消息GUID</param>
-        public static void RemoveMessageWithoutHis(Guid MessageGuid)
+        public static int RemoveMessageWithoutHis(Guid MessageGuid)
         {
             string strSQL = @"DELETE FROM dbo.p_Message WHERE MessageGuid=@MessageGuid;";
-            SQLHelper.ExecuteNonQuery(strSQL, new { MessageGuid = MessageGuid});
+            return SQLHelper.ExecuteNonQuery(strSQL, new { MessageGuid = MessageGuid});
         }
 
         /// <summary>

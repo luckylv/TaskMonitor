@@ -28,7 +28,7 @@ namespace Wlzx.Task.TaskSet
                 DataTable dt = SQLHelper.FillDataTable(sqlstr);
                 string ResumeStr = "";//报警站恢复字符串
                 Dictionary<string, Dictionary<string, string>> warningStrs = new Dictionary<string, Dictionary<string, string>>();   //任务报警信息合集
-                Dictionary<string, int> stnums = new Dictionary<string, int>();   //任务报警信息合集
+                Dictionary<string, int> stnums = new Dictionary<string, int>();   //任务报警台站个数
 
                 #region 查找每个任务的报警信息
                 foreach (DataRow row in dt.Rows)
@@ -41,7 +41,6 @@ namespace Wlzx.Task.TaskSet
                     else
                     {
                         string TaskName = row["TaskName"].ToString();   //任务名称
-
                         string TaskParam = row["TaskParam"].ToString();
                         MonitorParam Param = null;                      //TaskParam参数变量
 
@@ -57,7 +56,7 @@ namespace Wlzx.Task.TaskSet
 
                         if (Param != null)   //TaskParam参数解析成功
                         {
-                            #region 每日早上9：00恢复所有报警
+                            #region 每日早上9：00恢复所有报警重置IsWarn和AutoResume
                             if (context.PreviousFireTimeUtc != null)
                             {
                                 if (context.PreviousFireTimeUtc.Value.LocalDateTime < DateTime.Parse(DateTime.Now.ToShortDateString() + " 9:00:00") && DateTime.Now > DateTime.Parse(DateTime.Now.ToShortDateString() + " 9:00:00"))
@@ -91,7 +90,13 @@ namespace Wlzx.Task.TaskSet
                                 if (lastRunTime < DateTime.Now.AddHours(-6))
                                 {
                                     LogHelper.WriteLogAndC(TaskName + " 任务已6小时未运行，请检查！");
+                                    continue;
                                     //发短信?
+                                }
+                                else
+                                {
+                                    LogHelper.WriteLogAndC("等待"+TaskName + " 任务运行后进行监控");
+                                    continue;
                                 }
                             }
                             else
@@ -174,6 +179,13 @@ namespace Wlzx.Task.TaskSet
                     }
                 }
                 #endregion
+
+                if (warningStrs.Keys.Count == 0)
+                {
+                    LogHelper.WriteLogAndC("等待有任务运行后再进行监控");
+                    return;
+                }
+
 
 
                 #region 将相同类型的报警进行合并
@@ -270,21 +282,25 @@ namespace Wlzx.Task.TaskSet
                         {
                             if(TaskHelper.TimeInSpan(DateTime.Now,SysConfig.PerWarnStart,SysConfig.PerWarnEnd)) //在夜间
                             {
+                                
                                 double PerReach = (1.0-(double)kvp.Value.Count / (double)stnums[kvp.Key])*100;  //计算到达率
+                                
                                 if(PerReach>SysConfig.PerValue)  //高于阈值
                                 {
-
+                                    LogHelper.WriteLogAndC("在夜间，缺报站数" + kvp.Value.Count.ToString() + "，总站数" + stnums[kvp.Key].ToString() + "到达率为" + PerReach + "%,高于阈值" + SysConfig.PerValue);
                                 }
                                 else
                                 {
-                                    warnWord += kvp.Key.Substring(0, kvp.Key.IndexOf("监控")) + "报警,到达率为" + PerReach.ToString("f2 ");
-                                    LogHelper.WriteLogAndC(kvp.Key.Substring(0, kvp.Key.IndexOf("监控")) + "报警,到达率为" + PerReach.ToString("f2 "));
-                                    LogHelper.TaskWriteLog(kvp.Key.Substring(0, kvp.Key.IndexOf("监控")) + "报警,到达率为" + PerReach.ToString("f2 "), "报警信息");
+                                    LogHelper.WriteLogAndC("在夜间，缺报站数" + kvp.Value.Count.ToString() + "，总站数" + stnums[kvp.Key].ToString() + "到达率为" + PerReach + "%,低于阈值" + SysConfig.PerValue);
+                                    warnWord += kvp.Key.Substring(0, kvp.Key.IndexOf("监控")) + "报警,到达率为" + PerReach.ToString("f2");
+                                    LogHelper.WriteLogAndC(kvp.Key.Substring(0, kvp.Key.IndexOf("监控")) + "报警,到达率为" + PerReach.ToString("f2"));
+                                    LogHelper.TaskWriteLog(kvp.Key.Substring(0, kvp.Key.IndexOf("监控")) + "报警,到达率为" + PerReach.ToString("f2"), "报警信息");
                                 }
 
                             }
                             else //在白天
                             {
+                                LogHelper.WriteLogAndC("在白天");
                                 warnWord += onew + ";";
                                 LogHelper.WriteLogAndC("添加了报警" + onew + "，当前已报" + warnnum + "次，最大" + SysConfig.SmsMax);
                                 LogHelper.TaskWriteLog("添加了报警" + onew + "，当前已报" + warnnum + "次，最大" + SysConfig.SmsMax, "报警信息");
@@ -305,8 +321,6 @@ namespace Wlzx.Task.TaskSet
                         LogHelper.WriteLogAndC(onew + "在当天已被报警" + warnnum.ToString() + "次");
                         LogHelper.TaskWriteLog(onew + "在当天已被报警" + warnnum.ToString() + "次", "报警信息");
 
-                        
-
                     }
 
                     #endregion
@@ -319,7 +333,8 @@ namespace Wlzx.Task.TaskSet
                 {
                     LogHelper.WriteLogAndC("本次整合" + warnWord);
                     LogHelper.TaskWriteLog("本次整合" + warnWord, "报警信息");
-                    MessageHelper.AddMessage(SysConfig.SmsTels.Trim(), "本次整合" + warnWord, "报警标题", "监控轮询任务", Guid.Empty);
+                    //MessageHelper.AddMessage(SysConfig.SmsTels.Trim(), "本次整合" + warnWord, "报警标题", "监控轮询任务", Guid.Empty);
+                    MessageHelper.AddMessage(SysConfig.SmsTels.Trim(), warnWord, "报警标题", "监控轮询任务", Guid.Empty);
                 }
             }
             catch (Exception ex)
@@ -331,11 +346,6 @@ namespace Wlzx.Task.TaskSet
                 //2 立即停止所有相关这个任务的触发器
                 //e2.UnscheduleAllTriggers=true; 
             }
-	
-            
-            
-
         }
-
     }
 }
