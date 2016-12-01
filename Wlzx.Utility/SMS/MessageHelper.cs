@@ -74,8 +74,8 @@ namespace Wlzx.Utility
             while (!isSuccess && count < 3)
             {
                 //如果第一次没有发送成功再重新发送一遍
+                LogHelper.TaskWriteLog("短信第" + count + "次没有发送成功", "未发出报警信息");
                 LogHelper.WriteErrorAndC("短信第" + count + "次没有发送成功");
-                LogHelper.TaskWriteLog("短信第" + count + "次没有发送成功", "发送信息任务");
                 count++;
                 isSuccess = SendMessage(message, count);
             }

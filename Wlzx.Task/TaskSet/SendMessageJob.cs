@@ -29,7 +29,7 @@ namespace Wlzx.Task.TaskSet
                 bool isSucess = false;   
                 if (listWait == null || listWait.Count == 0)
                 {
-                    LogHelper.TaskWriteLog("当前没有等待发送的消息!", TName);
+                    //LogHelper.TaskWriteLog("当前没有等待发送的消息!", TName);
                     //TaskLog.SendMessageLogInfo.WriteLogE("当前没有等待发送的消息!");
                 }
                 else
@@ -37,24 +37,17 @@ namespace Wlzx.Task.TaskSet
                     foreach (Message item in listWait)
                     {
                         //检查此短信是否发过
+                        string rcvStr = item.Receiver;
                         Message itemtemp = item;
-
-                        //if(item.MessageGuid==itemtemp.MessageGuid)
-                        //    LogHelper.TaskWriteLog("itemtemp与item的ID号相同", TName);
-                        //else
-                        //    LogHelper.TaskWriteLog("itemtemp与item的ID号不相同", TName);
-
-                        CheckIsSend(ref itemtemp);//先进行发送检查
+                        CheckIsSend(ref itemtemp);//先进行发送检查，看是否需要发送，相同信息只会间隔发送，不同信息会立即发送
                         if(string.IsNullOrWhiteSpace(itemtemp.Receiver))
                         {
-                            int deln = MessageHelper.RemoveMessageWithoutHis(item.MessageGuid);//此条信息所有收信人在一天内均已发过,且超过3次
-                            LogHelper.TaskWriteLog("接收者:" + item.Receiver + "，内容:" + itemtemp.Content + " 未发出报警信息,删除了待发送记录" + deln.ToString() + "条", TName);
-                            LogHelper.TaskWriteLog("接收者:" + item.Receiver + "，内容:" + itemtemp.Content + " 未发出报警信息,删除了待发送记录"+deln.ToString()+"条", "未发出报警信息");
+                            int deln = MessageHelper.RemoveMessageWithoutHis(item.MessageGuid);//此条信息所有收信人在一天内均重发超过阈值
+                            LogHelper.TaskWriteLog("接收者:" + rcvStr + "，内容:" + itemtemp.Content + " 超过阈值未发出报警信息,删除了待发送记录" + deln.ToString() + "条", "未发出报警信息");
                         }
                         else
                         {
-                            LogHelper.TaskWriteLog("接收者:" + item.Receiver + "，内容:" + itemtemp.Content, TName);
-                            LogHelper.TaskWriteLog("接收者:" + item.Receiver + "，内容:" + itemtemp.Content, "发出报警信息");
+                            LogHelper.TaskWriteLog("发出报警，接收者:" + rcvStr + "，内容:" + itemtemp.Content, "发出报警信息");
                             isSucess = MessageHelper.SendMessage(itemtemp);
                             //LogHelper.TaskWriteLog(string.Format("接收人:{0},类型:{1},内容:“{2}”的消息发送{3}", item.Receiver, item.Type.ToString(), item.Content, isSucess ? "成功" : "失败"), TName);
                         }
@@ -131,7 +124,7 @@ namespace Wlzx.Task.TaskSet
                 {
                     if(listHistory.Count>0)//一次以上
                     {
-                        //未超过10，20，30等整数时间则不发送报警
+                        //相同报警信息，未超过10，20，30等（间隔时间的整数倍）则不发送报警
                         if ((DateTime.Now - listHistory[0].SendOn).Minutes < listHistory.Count * SysConfig.SmsSpan) 
                         {
                             string newrev;

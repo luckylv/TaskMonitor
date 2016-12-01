@@ -87,8 +87,7 @@ namespace Wlzx.Utility
             }
             catch (Exception ex)
             {
-                LogHelper.WriteError("短信发送出错", ex);
-                LogHelper.WriteLogC("短信发送出错" + ex.Message);
+                LogHelper.WriteErrorAndC("短信发送出错", ex);
                 return SMSCode.Exception;
             }
         }
@@ -181,8 +180,7 @@ namespace Wlzx.Utility
             }
             catch (Exception ex)
             {
-                LogHelper.WriteError("短信发送出错", ex);
-                LogHelper.WriteLogC("短信发送出错" + ex.Message);
+                LogHelper.WriteErrorAndC("短信发送出错", ex);
                 return SMSCode.Exception;
             }
         }
@@ -214,7 +212,7 @@ namespace Wlzx.Utility
                     if (YDSMSState == null)
                     {
                         string logstr = "发送短信错误，错误原因：第" + checkTime.ToString() + "次无法检索到短信发送状态，请检查数据库连接";
-                        LogHelper.TaskWriteLog(logstr, "发送信息任务", "error");
+                        LogHelper.TaskWriteLog(logstr, "未发出报警信息");
                         LogHelper.WriteErrorAndC(logstr);
                         return SMSCode.Exception;
                     }
@@ -227,14 +225,14 @@ namespace Wlzx.Utility
                     if (string.Equals(YDSMSState, "1"))
                     {
                         string logstr = "成功发送短信至" + oneReceiver + "，内容:" + content;
-                        LogHelper.TaskWriteLog(logstr, "发送信息任务");
+                        LogHelper.TaskWriteLog(logstr, "发出报警信息");
                         LogHelper.WriteLogAndC(logstr);
                         return SMSCode.Success;
                     }
                     else//状态为非1则发送失败
                     {
                         string logstr = "发送短信失败，未到达" + oneReceiver + "，内容:" + content + "，失败原因：获取短信状态为非1";
-                        LogHelper.TaskWriteLog(logstr, "发送信息任务", "error");
+                        LogHelper.TaskWriteLog(logstr, "未发出报警信息");
                         LogHelper.WriteErrorAndC(logstr);
                         return SMSCode.Fail;
                     }
@@ -242,7 +240,7 @@ namespace Wlzx.Utility
                 else//5次内还未检索到状态
                 {
                     string logstr = "发送短信失败，未到达" + oneReceiver + "，内容:" + content + "，失败原因：5次检索未取得短信发送状态";
-                    LogHelper.TaskWriteLog(logstr, "发送信息任务", "error");
+                    LogHelper.TaskWriteLog(logstr, "未发出报警信息");
                     LogHelper.WriteErrorAndC(logstr);
                     return SMSCode.Fail;
                 }
@@ -250,7 +248,7 @@ namespace Wlzx.Utility
             }
             catch (Exception ex)
             {
-                LogHelper.TaskWriteLog("短信发送出错" + ex.Message, "发送信息任务", "error");
+                LogHelper.TaskWriteLog("短信发送出错" + ex.Message, "未发出报警信息");
                 LogHelper.WriteErrorAndC("短信发送出错", ex);
                 return SMSCode.Exception;
             }
@@ -282,7 +280,7 @@ namespace Wlzx.Utility
                     if (current == null)
                     {
                         string logstr = "发送短信错误，错误原因：第" + checkTime+1.ToString() + "次无法检索到短信发送状态，请检查数据库连接";
-                        LogHelper.TaskWriteLog(logstr, "发送信息任务","error");
+                        LogHelper.TaskWriteLog(logstr, "未发出报警信息");
                         LogHelper.WriteErrorAndC(logstr);
                         return SMSCode.Exception;
                     }
@@ -293,14 +291,14 @@ namespace Wlzx.Utility
                     if (Convert.ToInt32(current.resultCode) == 0)
                     {
                         string logstr = "成功发送短信至" + current.phoneNumber + "，内容:" + current.smsContent;
-                        LogHelper.TaskWriteLog(logstr, "发送信息任务");
+                        LogHelper.TaskWriteLog(logstr, "发出报警信息");
                         LogHelper.WriteLogAndC(logstr);
                         return SMSCode.Success;
                     }
                     else//状态为非0则发送失败
                     {
                         string logstr = "发送短信失败，未到达" + current.phoneNumber + "，内容:" + current.smsContent + "，失败原因：" + current.resultDesc;
-                        LogHelper.TaskWriteLog(logstr, "发送信息任务", "error");
+                        LogHelper.TaskWriteLog(logstr, "未发出报警信息");
                         LogHelper.WriteErrorAndC(logstr);
                         return SMSCode.Fail;
                     }
@@ -308,7 +306,7 @@ namespace Wlzx.Utility
                 else//5次内还未检索到状态
                 {
                     string logstr = "发送短信失败，未到达" + current.phoneNumber + "，内容:" + current.smsContent + "，失败原因：5次检索未取得短信发送状态";
-                    LogHelper.TaskWriteLog(logstr, "发送信息任务", "error");
+                    LogHelper.TaskWriteLog(logstr, "未发出报警信息");
                     LogHelper.WriteErrorAndC(logstr);
                     return SMSCode.Fail;
                 }
@@ -316,7 +314,7 @@ namespace Wlzx.Utility
             }
             catch (Exception ex)
             {
-                LogHelper.TaskWriteLog("短信发送出错" + ex.Message, "发送信息任务", "error");
+                LogHelper.TaskWriteLog("短信发送出错" + ex.Message, "未发出报警信息");
                 LogHelper.WriteErrorAndC("短信发送出错", ex);
                 return SMSCode.Exception;
             }
